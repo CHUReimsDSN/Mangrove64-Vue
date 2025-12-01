@@ -1,9 +1,9 @@
-title: "Mangrove64"
+title: "Mangrove64-Vue"
 description: "Documentation"
 theme: just-the-docs
 markdown: kramdown
 color_scheme: dark
-baseurl: "/Mangrove64"
+baseurl: "/Mangrove64-Vue"
 mermaid:
   version: "9.1.3"
 callouts:
