@@ -1,0 +1,26 @@
+title: "Mangrove64"
+description: "Documentation"
+theme: just-the-docs
+markdown: kramdown
+color_scheme: dark
+baseurl: "/Mangrove64"
+mermaid:
+  version: "9.1.3"
+callouts:
+  warning:
+    title: Attention
+    color: red
+  important:
+    title: Important
+    color: blue
+  highlight:
+    color: yellow
+  new:
+    title: Nouveau
+    color: green
+  note:
+    title: Note
+    color: purple
+aux_links:
+  See on Github:
+    - https://github.com/CHUReimsDSN/Mangrove64
