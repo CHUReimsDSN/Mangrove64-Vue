@@ -780,7 +780,6 @@ function addNode(
     parent: parentNodeKey,
     children: [],
   });
-  setupElementsKeys([node]);
   levelKeys.value.set(nodeKey, (levelKeys.value.get(parentNodeKey) ?? 0) + 1);
   if (hiddenKeys.value.has(parentNodeKey)) {
     hiddenKeys.value.add(nodeKey);
@@ -795,6 +794,9 @@ function addNode(
       node
     );
   }
+  void nextTick(() => {
+    setupElementsKeys([node]);
+  })
   computeIndexKeys();
 }
 function removeNode(nodeKey: TTreeTableNodeKey) {
@@ -812,9 +814,6 @@ function removeNode(nodeKey: TTreeTableNodeKey) {
   levelKeys.value.delete(nodeKey);
   hiddenKeys.value.delete(nodeKey);
   computeIndexKeys();
-}
-function isFakeRowHidden(node: T) {
-  return isNodeHidden(node) || !isDragging.value
 }
 function getSelectedKeys() {
   return selectedKeys.value;
@@ -837,7 +836,6 @@ const slotMap = computed(() => {
       map.set(key, slot);
     }
   }
-  console.log(map)
   return map;
 });
 
@@ -925,7 +923,7 @@ onScopeDispose(() => {
               :expanded="isNodeExpanded(node)"
               :selected="isNodeSelected(node)"
               :level="getNodeLevel(node)"
-              :hidden="isFakeRowHidden(node)"
+              :hidden="isNodeHidden(node)"
               :indentationPx="propsComponent.indentationPx"
               :row-css-class="propsComponent.rowCssClass"
               :cell-css-class="propsComponent.cellCssClass"
