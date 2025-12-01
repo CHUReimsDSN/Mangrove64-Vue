@@ -7,7 +7,7 @@ title: Accueil
 </div>
 
 
-# Mangrove64
+# Mangrove64 - Vue
 
 Mangrove64 est une librairie d'interaction de données arborescente.
 
