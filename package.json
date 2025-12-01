@@ -13,7 +13,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "style.css"
   ],
   "scripts": {
     "build": "vite build && tsc"
