@@ -6,11 +6,7 @@ title: Réference
 
 Il est possible de définir une référence sur le composant Mangrove64TreeTable afin d'accèder à des méthodes ou données utilitaires.
 
-```typescript
-
-```
-
-Exemple d'accès au formulaire :  
+Exemple :  
 
 ```vue
 <script setup lang="ts">
