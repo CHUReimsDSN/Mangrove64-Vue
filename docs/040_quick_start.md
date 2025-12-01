@@ -10,6 +10,7 @@ Utiliser le composant `Mangrove64Tree` pour afficher une arborescence de donnée
 ```vue
 <script setup lang="ts">
 import { Mangrove64Tree, type TMangrove64TreeColumn } from 'mangrove64-vue';
+import 'mangrove64-vue/dist/style.css';
 import { ref } from 'vue';
 
 type TComment = {

@@ -813,6 +813,9 @@ function removeNode(nodeKey: TTreeTableNodeKey) {
   hiddenKeys.value.delete(nodeKey);
   computeIndexKeys();
 }
+function isFakeRowHidden(node: T) {
+  return isNodeHidden(node) || !isDragging.value
+}
 function getSelectedKeys() {
   return selectedKeys.value;
 }
@@ -834,6 +837,7 @@ const slotMap = computed(() => {
       map.set(key, slot);
     }
   }
+  console.log(map)
   return map;
 });
 
@@ -921,7 +925,7 @@ onScopeDispose(() => {
               :expanded="isNodeExpanded(node)"
               :selected="isNodeSelected(node)"
               :level="getNodeLevel(node)"
-              :hidden="isNodeHidden(node)"
+              :hidden="isFakeRowHidden(node)"
               :indentationPx="propsComponent.indentationPx"
               :row-css-class="propsComponent.rowCssClass"
               :cell-css-class="propsComponent.cellCssClass"
