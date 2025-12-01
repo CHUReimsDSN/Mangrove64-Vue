@@ -12,6 +12,7 @@ export default defineConfig({
       fileName: 'index',
       formats: ['es', 'umd']
     },
+    cssCodeSplit: false,
     rollupOptions: {
       external: ['vue', 'quasar'],
       output: {

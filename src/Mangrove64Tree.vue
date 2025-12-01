@@ -936,7 +936,3 @@ onScopeDispose(() => {
     </div>
   </div>
 </template>
-
-<style>
-@import './style.css';
-</style>
