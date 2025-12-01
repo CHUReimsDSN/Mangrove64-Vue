@@ -10,7 +10,6 @@ import {
   type Ref,
   type Slot,
 } from "vue";
-import "./style.css";
 import TreeTableHeaderCell from "./components/TreeTableHeaderCell.vue";
 import TreeTableRow from "./components/TreeTableRow.vue";
 import TreeTableFakeRow from "./components/TreeTableFakeRow.vue";
@@ -937,3 +936,7 @@ onScopeDispose(() => {
     </div>
   </div>
 </template>
+
+<style>
+@import './style.css';
+</style>
