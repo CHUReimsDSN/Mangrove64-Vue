@@ -44,7 +44,7 @@ export type TMangrove64TreeApi<T extends object = object> = {
     getSelectedKeys: () => Set<TTreeTableNodeKey>;
     getExpandedKeys: () => Set<TTreeTableNodeKey>;
     getNodeByKey: (nodeKey: TTreeTableNodeKey) => T | undefined;
-    updateNode: (nodeKey: TTreeTableNodeKey, nodeData: T) => void;
-    addNode: (node: T, parentNodeKey: TTreeTableNodeKey, positionBelowParent: number) => void;
+    updateNode: (nodeData: T) => void;
+    addNode: (node: T) => void;
     removeNode: (nodeKey: TTreeTableNodeKey) => void;
 };
