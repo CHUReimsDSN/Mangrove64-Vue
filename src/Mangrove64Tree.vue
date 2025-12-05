@@ -718,6 +718,9 @@ function setNodeOrder(node: T, orderWithinParent: number) {
     propsComponent.orderKey as keyof T
   ] = orderWithinParent;
 }
+function getNodeParentKey(node: T) {
+  return (node[propsComponent.parentKey as keyof T]) as TTreeTableNodeKey | undefined;
+}
 function getNodeChildren(node: T) {
   return (node[propsComponent.childrenKey as keyof T] ?? []) as T[];
 }
@@ -759,8 +762,8 @@ function getNodeByKey(nodeKey: TTreeTableNodeKey) {
     return getNodeKeyValue(node) === nodeKey;
   });
 }
-function updateNode(nodeKey: TTreeTableNodeKey, nodeData: T) {
-  const nodeIndex = indexKeys.get(nodeKey);
+function updateNode(nodeData: T) {
+  const nodeIndex = indexKeys.get(getNodeKeyValue(nodeData));
   if (nodeIndex === undefined) {
     return;
   }
@@ -768,10 +771,9 @@ function updateNode(nodeKey: TTreeTableNodeKey, nodeData: T) {
 }
 function addNode(
   node: T,
-  parentNodeKey: TTreeTableNodeKey,
-  positionBelowParent: number
 ) {
   const nodeKey = getNodeKeyValue(node);
+  const parentNodeKey = getNodeParentKey(node) ?? '-1'
   const parentHierarchy = hierarchiKeys.get(parentNodeKey);
   if (parentHierarchy) {
     parentHierarchy.children.push(nodeKey);
@@ -785,6 +787,7 @@ function addNode(
     hiddenKeys.value.add(nodeKey);
   }
   const parentNodeIndex = indexKeys.get(parentNodeKey);
+  const positionBelowParent = getNodeOrder(node)
   if (parentNodeIndex === undefined) {
     nodesRef.value.splice(positionBelowParent, 0, node);
   } else {
