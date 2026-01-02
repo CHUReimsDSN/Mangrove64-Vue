@@ -46,16 +46,16 @@ function onNodeClick(node: T) {
 
 // computeds
 const rowClass = computed(() => {
-  let classes = "tree-table-row tree-table-fake-row";
+  let classes = "mangrove64-row mangrove64-fake-row";
   classes += ` ${propsComponent.rowCssClass}`;
   if (propsComponent.selected) {
-    classes += " tree-table-row-selected";
+    classes += " mangrove64-row-selected";
   }
   if (propsComponent.hidden) {
-    classes += " tree-table-row-hidden";
+    classes += " mangrove64-row-hidden";
   }
   if (propsComponent.isDragging) {
-    classes += " tree-table-fake-row-display";
+    classes += " mangrove64-fake-row-display";
   }
   return classes;
 });
@@ -64,13 +64,13 @@ const getcellCssClass = computed(() => {
   classes += ` ${propsComponent.cellCssClass}`;
   switch (propsComponent.borderStrategy) {
     case "horizontal":
-      classes += " tree-table-bordered-b";
+      classes += " mangrove64-bordered-b";
       break;
     case "vertical":
-      classes += " tree-table-bordered-lr";
+      classes += " mangrove64-bordered-lr";
       break;
     case "cell":
-      classes += " tree-table-bordered-lbr";
+      classes += " mangrove64-bordered-lbr";
       break;
   }
   return classes;

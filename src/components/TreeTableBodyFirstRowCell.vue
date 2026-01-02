@@ -72,23 +72,23 @@ const nodeFieldByColumn = computed(() => {
   }
 });
 const getcellCssClass = computed(() => {
-  let classes = "tree-table-cell";
+  let classes = "mangrove64-cell";
   classes += ` ${propsComponent.cellCssClass}`;
   if (propsComponent.column.cssClass) {
     classes += ` ${propsComponent.column.cssClass}`;
   }
   if (propsComponent.selected) {
-    classes += " tree-table-selected";
+    classes += " mangrove64-selected";
   }
   switch (propsComponent.borderStrategy) {
     case "horizontal":
-      classes += " tree-table-bordered-t";
+      classes += " mangrove64-bordered-t";
       break;
     case "vertical":
-      classes += " tree-table-bordered-lr";
+      classes += " mangrove64-bordered-lr";
       break;
     case "cell":
-      classes += " tree-table-bordered-ltr";
+      classes += " mangrove64-bordered-ltr";
       break;
   }
   return classes;
@@ -110,7 +110,7 @@ watch(
 
 <template>
   <td :class="getcellCssClass" :style="getCellStyle">
-    <div class="flex row no-wrap items-center tree-table-cell-inner">
+    <div class="flex row no-wrap items-center mangrove64-cell-inner">
       <q-checkbox
         v-if="checkboxSelectionMode"
         @update:model-value="toggleCheckbox"

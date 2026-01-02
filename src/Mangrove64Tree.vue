@@ -23,6 +23,7 @@ import type {
   TTreeTableHierarchy,
   TTreeTableNodeKey,
   TTreeTableSlot,
+  TTreeTableTheme,
 } from "./private-models";
 
 // props
@@ -96,6 +97,7 @@ const treeBodyEl = ref<HTMLElement | null>(null);
 const isReady = ref(false);
 const isDragging = ref(false);
 const rerenderTrick = ref(0);
+const themeMode = ref<TTreeTableTheme>('light')
 
 // hooks
 const hook = useSortable(treeBodyEl);
@@ -829,6 +831,11 @@ function getSelectedKeys() {
 function getExpandedKeys() {
   return expandedKeys.value;
 }
+function setupThemeMode() {
+  if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    themeMode.value = "dark";
+  }
+}
 
 // computeds
 const tableClass = computed(() => {
@@ -867,6 +874,7 @@ watch(
 
 // lifeCycle
 onMounted(() => {
+  setupThemeMode();
   init();
   void nextTick(() => {
     setupElementsKeys(nodesRef.value);
@@ -886,7 +894,7 @@ onScopeDispose(() => {
           <tr>
             <template v-for="(col, i) in columnsRef" :key="col.name">
               <TreeTableHeaderCell :column="col" :resizableColumns="propsComponent.resizableColumns" :index="i"
-                :borderStrategy="propsComponent.borderStrategy" />
+                :borderStrategy="propsComponent.borderStrategy" :theme="themeMode" />
             </template>
           </tr>
         </thead>

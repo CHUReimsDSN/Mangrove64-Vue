@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T">
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import type { TMangrove64TreeColumn } from "../models";
-import type { TTreeTableBorderStrategy } from "../private-models";
+import type { TTreeTableBorderStrategy, TTreeTableTheme } from "../private-models";
 
 // props
 const propsComponent = defineProps<{
@@ -9,6 +9,7 @@ const propsComponent = defineProps<{
   index: number;
   resizableColumns: boolean;
   borderStrategy: TTreeTableBorderStrategy;
+  theme: TTreeTableTheme
 }>();
 
 const thEl = ref<HTMLElement | null>(null);
@@ -99,10 +100,13 @@ function stopDrag() {
 const headerStyle = computed(() => {
   return `text-align: ${propsComponent.column.align ?? "left"};`;
 });
+const headerCssClasses = computed(() => {
+  return propsComponent.theme === 'dark' ? 'mangrove64-cell-header-content-dark' : 'mangrove64-cell-header-content'
+})
 const cellClass = computed(() => {
   let classes = "";
   if (propsComponent.borderStrategy !== "none") {
-    classes += " tree-table-bordered-ltrb";
+    classes += " mangrove64-bordered-ltrb";
   }
   return classes;
 });
@@ -133,12 +137,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <th class="tree-table-cell-header" :class="cellClass" ref="thEl">
-    <div class="tree-table-cell-header-content" :style="headerStyle">
+  <th class="mangrove64-cell-header" :class="cellClass" ref="thEl">
+    <div :class="headerCssClasses" :style="headerStyle">
       {{ propsComponent.column.label }}
       <div
         v-if="propsComponent.resizableColumns"
-        class="tree-table-resize-handle"
+        class="mangrove64-resize-handle"
         ref="handle"
       ></div>
     </div>

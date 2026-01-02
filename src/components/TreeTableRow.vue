@@ -66,13 +66,13 @@ const isNodeDisabled = computed(() => {
   return propsComponent.node[propsComponent.disabledKey] as boolean;
 });
 const rowClass = computed(() => {
-  let classes = "tree-table-row";
+  let classes = "mangrove64-row";
   classes += ` ${propsComponent.rowCssClass}`;
   if (propsComponent.selected) {
-    classes += " tree-table-row-selected";
+    classes += " mangrove64-row-selected";
   }
   if (propsComponent.hidden) {
-    classes += " tree-table-row-hidden";
+    classes += " mangrove64-row-hidden";
   }
   return classes;
 });
