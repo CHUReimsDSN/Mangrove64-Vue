@@ -228,11 +228,13 @@ function useSortable(el: Ref<HTMLElement | null>) {
             }
           } else if (movingMode === "child-to-previous") {
             console.log(targetNodeKey)
+            console.log(movingNodeKey)
             hierarchyMovingNode.parent = targetNodeKey;
             const targetHierarchy = hierarchiKeys.get(targetNodeKey);
             if (targetHierarchy) {
               targetHierarchy.children.unshift(movingNodeKey);
             }
+            console.log(targetHierarchy)
           }
 
           // nodesref update
