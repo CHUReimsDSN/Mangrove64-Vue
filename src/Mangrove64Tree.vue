@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import {
   computed,
   onMounted,
@@ -10,7 +10,6 @@ import {
   type Ref,
   type Slot,
 } from "vue";
-import "./style.css";
 import TreeTableHeaderCell from "./components/TreeTableHeaderCell.vue";
 import TreeTableRow from "./components/TreeTableRow.vue";
 import TreeTableFakeRow from "./components/TreeTableFakeRow.vue";
@@ -24,6 +23,7 @@ import type {
   TTreeTableHierarchy,
   TTreeTableNodeKey,
   TTreeTableSlot,
+  TTreeTableTheme,
 } from "./private-models";
 
 // props
@@ -75,8 +75,8 @@ let moveEventTargetAttribute: string | null = null;
 
 // consts
 const dataKeyAttribute = "data-key" as const;
-const fakeElementPrefix = "__tree-table-fake-row-" as const;
-const rootHierarchyKey = "__tree-table-null-hierarchy-key" as const;
+const fakeElementPrefix = "__mangrove64-fake-row-" as const;
+const rootHierarchyKey = "__mangrove64-null-hierarchy-key" as const;
 const slots = useSlots();
 const elementKeys: Map<TTreeTableNodeKey, HTMLElement> = new Map();
 const hierarchiKeys: Map<TTreeTableNodeKey, TTreeTableHierarchy> = new Map();
@@ -97,6 +97,7 @@ const treeBodyEl = ref<HTMLElement | null>(null);
 const isReady = ref(false);
 const isDragging = ref(false);
 const rerenderTrick = ref(0);
+const themeMode = ref<TTreeTableTheme>('light')
 
 // hooks
 const hook = useSortable(treeBodyEl);
@@ -236,7 +237,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
           }
 
           // nodesref update
-          if (newPositionInParent !== -1) {
+          if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
             const keyNewParent =
               hierarchyMovingNode.parent === rootHierarchyKey
                 ? null
@@ -354,9 +355,10 @@ function useSortable(el: Ref<HTMLElement | null>) {
         movingMode === "child-to-previous" && event.willInsertAfter
           ? castAttributeToNodeKeyType(targetAttribute)
           : castAttributeToNodeKeyType(
-              targetAttribute.replaceAll(fakeElementPrefix, "")
-            );
+            targetAttribute.replaceAll(fakeElementPrefix, "")
+          );
       const targetHierarchy = hierarchiKeys.get(targetNodeKey);
+
       if (!targetHierarchy) {
         return false;
       }
@@ -469,7 +471,7 @@ function setupElementsKeys(nodes: T[]) {
     return;
   }
   const allRowElement = [
-    ...treeBodyEl.value.querySelectorAll(".tree-table-row"),
+    ...treeBodyEl.value.querySelectorAll(".mangrove64-row"),
   ];
   nodes.forEach((node) => {
     const nodeKey = getNodeKeyValue(node);
@@ -666,10 +668,7 @@ function onNodeCheckboxToggle(node: T, state: boolean) {
         emitCallback = () => emitsComponent("node-select", node);
       } else {
         setSelectedKeys(nodeKey, state);
-        const parentNodeKey = hierarchiKeys.get(nodeKey)?.parent;
-        if (parentNodeKey) {
-          setSelectedKeys(parentNodeKey, state);
-        }
+        propagateSelectionUp(nodeKey, state)
         emitCallback = () => emitsComponent("node-unselect", node);
       }
       propagateSelectionDown(nodeKey, state);
@@ -687,13 +686,20 @@ function propagateSelectionDown(nodeKey: TTreeTableNodeKey, state: boolean) {
     return;
   }
   hierarchy.children.forEach((childNodeKey) => {
-    if (state) {
-      setSelectedKeys(childNodeKey, true);
-    } else {
-      setSelectedKeys(childNodeKey, false);
-    }
+    setSelectedKeys(childNodeKey, state);
     propagateSelectionDown(childNodeKey, state);
   });
+}
+function propagateSelectionUp(nodeKey: TTreeTableNodeKey, state: boolean) {
+  const hierarchy = hierarchiKeys.get(nodeKey);
+  if (!hierarchy) {
+    return;
+  }
+  setSelectedKeys(hierarchy.parent, state);
+  if (hierarchy.parent === rootHierarchyKey) {
+    return
+  }
+  propagateSelectionUp(hierarchy.parent, state);
 }
 function getElementFakeNodeKey(nodeKey: TTreeTableNodeKey) {
   return `${fakeElementPrefix}${nodeKey.toString()}`;
@@ -718,6 +724,9 @@ function setNodeOrder(node: T, orderWithinParent: number) {
   (node as { [K in keyof typeof node]: TTreeTableNodeKey | null })[
     propsComponent.orderKey as keyof T
   ] = orderWithinParent;
+}
+function getNodeParentKey(node: T) {
+  return (node[propsComponent.parentKey as keyof T]) as TTreeTableNodeKey | undefined;
 }
 function getNodeChildren(node: T) {
   return (node[propsComponent.childrenKey as keyof T] ?? []) as T[];
@@ -760,8 +769,8 @@ function getNodeByKey(nodeKey: TTreeTableNodeKey) {
     return getNodeKeyValue(node) === nodeKey;
   });
 }
-function updateNode(nodeKey: TTreeTableNodeKey, nodeData: T) {
-  const nodeIndex = indexKeys.get(nodeKey);
+function updateNode(nodeData: T) {
+  const nodeIndex = indexKeys.get(getNodeKeyValue(nodeData));
   if (nodeIndex === undefined) {
     return;
   }
@@ -769,10 +778,9 @@ function updateNode(nodeKey: TTreeTableNodeKey, nodeData: T) {
 }
 function addNode(
   node: T,
-  parentNodeKey: TTreeTableNodeKey,
-  positionBelowParent: number
 ) {
   const nodeKey = getNodeKeyValue(node);
+  const parentNodeKey = getNodeParentKey(node) ?? '-1'
   const parentHierarchy = hierarchiKeys.get(parentNodeKey);
   if (parentHierarchy) {
     parentHierarchy.children.push(nodeKey);
@@ -781,12 +789,12 @@ function addNode(
     parent: parentNodeKey,
     children: [],
   });
-  setupElementsKeys([node]);
   levelKeys.value.set(nodeKey, (levelKeys.value.get(parentNodeKey) ?? 0) + 1);
   if (hiddenKeys.value.has(parentNodeKey)) {
     hiddenKeys.value.add(nodeKey);
   }
   const parentNodeIndex = indexKeys.get(parentNodeKey);
+  const positionBelowParent = getNodeOrder(node)
   if (parentNodeIndex === undefined) {
     nodesRef.value.splice(positionBelowParent, 0, node);
   } else {
@@ -796,6 +804,9 @@ function addNode(
       node
     );
   }
+  void nextTick(() => {
+    setupElementsKeys([node]);
+  })
   computeIndexKeys();
 }
 function removeNode(nodeKey: TTreeTableNodeKey) {
@@ -819,6 +830,11 @@ function getSelectedKeys() {
 }
 function getExpandedKeys() {
   return expandedKeys.value;
+}
+function setupThemeMode() {
+  if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    themeMode.value = "dark";
+  }
 }
 
 // computeds
@@ -858,6 +874,7 @@ watch(
 
 // lifeCycle
 onMounted(() => {
+  setupThemeMode();
   init();
   void nextTick(() => {
     setupElementsKeys(nodesRef.value);
@@ -872,65 +889,33 @@ onScopeDispose(() => {
 <template>
   <div>
     <div>
-      <table class="tree-table-table" :class="tableClass">
+      <table class="mangrove64-table" :class="tableClass">
         <thead>
           <tr>
-            <template v-for="(col, i) in columnsRef" :key="col.fieldTarget">
-              <TreeTableHeaderCell
-                :column="col"
-                :resizableColumns="propsComponent.resizableColumns"
-                :index="i"
-                :borderStrategy="propsComponent.borderStrategy"
-              />
+            <template v-for="(col, i) in columnsRef" :key="col.name">
+              <TreeTableHeaderCell :column="col" :resizableColumns="propsComponent.resizableColumns" :index="i"
+                :borderStrategy="propsComponent.borderStrategy" :theme="themeMode" />
             </template>
           </tr>
         </thead>
         <tbody ref="treeBodyEl" :key="rerenderTrick">
-          <template
-            v-for="node in nodesRef"
-            :key="node[propsComponent.nodeKey as keyof T]"
-          >
-            <TreeTableRow
-              :node="node"
-              :columns="columns"
-              :node-key="propsComponent.nodeKey as keyof T"
+          <template v-for="node in nodesRef" :key="node[propsComponent.nodeKey as keyof T]">
+            <TreeTableRow :node="node" :columns="columns" :node-key="propsComponent.nodeKey as keyof T"
               :children-key="propsComponent.childrenKey as keyof T"
-              :has-children-key="propsComponent.hasChildrenKey as keyof T"
-              :disabled-key="propsComponent.disabledKey"
-              :selectionMode="propsComponent.selectionMode"
-              :expanded="isNodeExpanded(node)"
-              :selected="isNodeSelected(node)"
-              :isLoading="isNodeLoading(node)"
-              :level="getNodeLevel(node)"
-              :hidden="isNodeHidden(node)"
-              :indentationPx="propsComponent.indentationPx"
-              :row-css-class="propsComponent.rowCssClass"
-              :cell-css-class="propsComponent.cellCssClass"
-              :border-strategy="propsComponent.borderStrategy"
-              :context-menu="propsComponent.contextMenu"
-              :slot-map="slotMap"
-              :checkbox-color="propsComponent.checkboxColor"
-              @node-expand-toggle="onNodeExpandToggle"
-              @node-checkbox-toggle="onNodeCheckboxToggle"
-              @node-click="onNodeClick"
-            />
-            <TreeTableFakeRow
-              :node="node"
-              :columns="columns"
-              :node-key="propsComponent.nodeKey as keyof T"
-              :disabled-key="propsComponent.disabledKey"
-              :expanded="isNodeExpanded(node)"
-              :selected="isNodeSelected(node)"
-              :level="getNodeLevel(node)"
-              :hidden="isNodeHidden(node)"
-              :indentationPx="propsComponent.indentationPx"
-              :row-css-class="propsComponent.rowCssClass"
-              :cell-css-class="propsComponent.cellCssClass"
-              :border-strategy="propsComponent.borderStrategy"
-              :context-menu="propsComponent.contextMenu"
-              :is-dragging="isDragging"
-              @node-click="onNodeClick"
-            />
+              :has-children-key="propsComponent.hasChildrenKey as keyof T" :disabled-key="propsComponent.disabledKey"
+              :selectionMode="propsComponent.selectionMode" :expanded="isNodeExpanded(node)"
+              :selected="isNodeSelected(node)" :isLoading="isNodeLoading(node)" :level="getNodeLevel(node)"
+              :hidden="isNodeHidden(node)" :indentationPx="propsComponent.indentationPx"
+              :row-css-class="propsComponent.rowCssClass" :cell-css-class="propsComponent.cellCssClass"
+              :border-strategy="propsComponent.borderStrategy" :slot-map="slotMap"
+              :checkbox-color="propsComponent.checkboxColor" @node-expand-toggle="onNodeExpandToggle"
+              @node-checkbox-toggle="onNodeCheckboxToggle" @node-click="onNodeClick" />
+            <TreeTableFakeRow :node="node" :columns="columns" :node-key="propsComponent.nodeKey as keyof T"
+              :disabled-key="propsComponent.disabledKey" :expanded="isNodeExpanded(node)"
+              :selected="isNodeSelected(node)" :level="getNodeLevel(node)" :hidden="isNodeHidden(node)"
+              :indentationPx="propsComponent.indentationPx" :row-css-class="propsComponent.rowCssClass"
+              :cell-css-class="propsComponent.cellCssClass" :border-strategy="propsComponent.borderStrategy"
+              :is-dragging="isDragging" @node-click="onNodeClick" />
           </template>
         </tbody>
       </table>

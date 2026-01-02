@@ -27,6 +27,5 @@ function example() {
 </template>
 ```
 
-
 {: .important }
 Consulter les [Définitions]({% link 120_definitions.md %}) pour savoir quelles méthodes sont disponibles.

@@ -1,14 +1,12 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import { computed } from "vue";
 import type {
   TMangrove64TreeColumn,
-  TMangrove64TreeContextMenu,
 } from "../models";
 import type {
   TTreeTableBorderStrategy,
   TTreeTableNodeKey,
 } from "../private-models";
-import TreeTableContextMenu from "./TreeTableContextMenu.vue";
 
 // emits
 const emitsComponent = defineEmits<{
@@ -26,7 +24,6 @@ const propsComponent = defineProps<{
   hidden: boolean;
   level: number;
   indentationPx: number;
-  contextMenu: TMangrove64TreeContextMenu<T> | undefined;
   borderStrategy: TTreeTableBorderStrategy;
   rowCssClass: string | undefined;
   cellCssClass: string | undefined;
@@ -34,7 +31,7 @@ const propsComponent = defineProps<{
 }>();
 
 // consts
-const fakeElementPrefix = "__tree-table-fake-row-";
+const fakeElementPrefix = "__mangrove64-fake-row-";
 
 // functions
 function getNodeKeyValue(node: T) {
@@ -49,16 +46,16 @@ function onNodeClick(node: T) {
 
 // computeds
 const rowClass = computed(() => {
-  let classes = "tree-table-row tree-table-fake-row";
+  let classes = "mangrove64-row mangrove64-fake-row";
   classes += ` ${propsComponent.rowCssClass}`;
   if (propsComponent.selected) {
-    classes += " tree-table-row-selected";
+    classes += " mangrove64-row-selected";
   }
   if (propsComponent.hidden) {
-    classes += " tree-table-row-hidden";
+    classes += " mangrove64-row-hidden";
   }
   if (propsComponent.isDragging) {
-    classes += " tree-table-fake-row-display";
+    classes += " mangrove64-fake-row-display";
   }
   return classes;
 });
@@ -67,13 +64,13 @@ const getcellCssClass = computed(() => {
   classes += ` ${propsComponent.cellCssClass}`;
   switch (propsComponent.borderStrategy) {
     case "horizontal":
-      classes += " tree-table-bordered-b";
+      classes += " mangrove64-bordered-b";
       break;
     case "vertical":
-      classes += " tree-table-bordered-lr";
+      classes += " mangrove64-bordered-lr";
       break;
     case "cell":
-      classes += " tree-table-bordered-lbr";
+      classes += " mangrove64-bordered-lbr";
       break;
   }
   return classes;
@@ -89,10 +86,5 @@ const getcellCssClass = computed(() => {
     <template v-for="col in propsComponent.columns" :key="col.name">
       <td :class="getcellCssClass"></td>
     </template>
-    <TreeTableContextMenu
-      v-if="propsComponent.contextMenu"
-      :context-menu="propsComponent.contextMenu"
-      :node="propsComponent.node"
-    />
   </tr>
 </template>

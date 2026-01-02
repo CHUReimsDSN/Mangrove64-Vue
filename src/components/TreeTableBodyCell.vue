@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import { computed } from "vue";
 import type { TMangrove64TreeColumn } from "../models";
 import type {
@@ -23,23 +23,25 @@ const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
     return propsComponent.column.format(propsComponent.node);
   }
-  return propsComponent.node[propsComponent.column.fieldTarget];
+  if (propsComponent.column.fieldTarget) {
+    return propsComponent.node[propsComponent.column.fieldTarget];
+  }
 });
 const getcellCssClass = computed(() => {
-  let classes = "tree-table-cell";
+  let classes = "mangrove64-cell";
   classes += ` ${propsComponent.cellCssClass}`;
   if (propsComponent.column.cssClass) {
     classes += ` ${propsComponent.column.cssClass}`;
   }
   switch (propsComponent.borderStrategy) {
     case "horizontal":
-      classes += " tree-table-bordered-t";
+      classes += " mangrove64-bordered-t";
       break;
     case "vertical":
-      classes += " tree-table-bordered-lr";
+      classes += " mangrove64-bordered-lr";
       break;
     case "cell":
-      classes += " tree-table-bordered-ltr";
+      classes += " mangrove64-bordered-ltr";
       break;
   }
   return classes;
@@ -53,7 +55,7 @@ const getcellCssClass = computed(() => {
         :is="{ render: () => propsComponent.slotRender!({ node: propsComponent.node }) }"
       />
     </template>
-    <div v-else class="tree-table-cell-inner">
+    <div v-else class="mangrove64-cell-inner">
       {{ nodeFieldByColumn }}
     </div>
   </td>
