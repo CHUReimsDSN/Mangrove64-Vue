@@ -235,7 +235,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
           }
 
           // nodesref update
-          if (newPositionInParent !== -1) {
+          if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
             const keyNewParent =
               hierarchyMovingNode.parent === rootHierarchyKey
                 ? null
