@@ -20,7 +20,6 @@ type TMangrove64TreeProps<T extends object> = {
   expandeAllNodeAtStart?: boolean;
   selectedNodeAtStart?: TTreeTableNodeKey[];
   selectionMode?: TTreeTableSelectionMode;
-  contextMenu?: TMangrove64TreeContextMenu<T>;
   resizableColumns?: boolean;
   indentationPx?: number;
   borderStrategy?: TTreeTableBorderStrategy;
@@ -45,19 +44,6 @@ type TMangrove64TreeColumn<T extends object> = {
   cssClass?: string;
   align?: "left" | "center" | "right";
   format?: (node: T) => string;
-};
-```
-
-## TMangrove64TreeContextMenu
-```typescript
-type TMangrove64TreeContextMenu<T extends object> = {
-  actions: {
-    label: string;
-    action: (node: T) => Promise<void> | void;
-    icon?: string;
-    cssClass?: string;
-  }[];
-  cssClass?: string;
 };
 ```
 
