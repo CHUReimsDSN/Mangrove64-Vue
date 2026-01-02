@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import { computed, ref, watch } from "vue";
 import { QIcon, QCheckbox, QSpinner } from 'quasar'
 import type { TMangrove64TreeColumn } from "../models";
@@ -67,7 +67,9 @@ const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
     return propsComponent.column.format(propsComponent.node);
   }
-  return propsComponent.node[propsComponent.column.fieldTarget];
+  if (propsComponent.column.fieldTarget) {
+    return propsComponent.node[propsComponent.column.fieldTarget];
+  }
 });
 const getcellCssClass = computed(() => {
   let classes = "tree-table-cell";

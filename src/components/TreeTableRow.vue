@@ -1,6 +1,5 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import type {
-  TMangrove64TreeContextMenu,
   TMangrove64TreeColumn,
 } from "../models";
 import type {
@@ -12,7 +11,6 @@ import type {
 import { computed } from "vue";
 import TreeTableBodyCell from "./TreeTableBodyCell.vue";
 import TreeTableBodyFirstRowCell from "./TreeTableBodyFirstRowCell.vue";
-import TreeTableContextMenu from "./TreeTableContextMenu.vue";
 
 // emits
 const emitsComponent = defineEmits<{
@@ -36,7 +34,6 @@ const propsComponent = defineProps<{
   hidden: boolean;
   level: number;
   indentationPx: number;
-  contextMenu: TMangrove64TreeContextMenu<T> | undefined;
   borderStrategy: TTreeTableBorderStrategy;
   rowCssClass: string | undefined;
   cellCssClass: string | undefined;
@@ -116,10 +113,5 @@ const rowClass = computed(() => {
         :slot-render="propsComponent.slotMap.get(col.name)"
       />
     </template>
-    <TreeTableContextMenu
-      v-if="propsComponent.contextMenu"
-      :context-menu="propsComponent.contextMenu"
-      :node="propsComponent.node"
-    />
   </tr>
 </template>

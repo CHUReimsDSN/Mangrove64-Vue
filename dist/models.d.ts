@@ -1,5 +1,5 @@
 import type { TTreeTableBorderStrategy, TTreeTableNodeKey, TTreeTableNodeKeyType, TTreeTableSelectionMode } from "./private-models";
-export type TMangrove64TreeProps<T extends object = object> = {
+export type TMangrove64TreeProps<T> = {
     nodes: T[];
     columns: TMangrove64TreeColumn<T>[];
     draggable?: boolean;
@@ -13,7 +13,6 @@ export type TMangrove64TreeProps<T extends object = object> = {
     expandeAllNodeAtStart?: boolean;
     selectedNodeAtStart?: TTreeTableNodeKey[];
     selectionMode?: TTreeTableSelectionMode;
-    contextMenu?: TMangrove64TreeContextMenu<T>;
     resizableColumns?: boolean;
     indentationPx?: number;
     borderStrategy?: TTreeTableBorderStrategy;
@@ -23,24 +22,15 @@ export type TMangrove64TreeProps<T extends object = object> = {
     nodeKeyType?: TTreeTableNodeKeyType;
     checkboxColor?: string;
 };
-export type TMangrove64TreeColumn<T extends object = object> = {
+export type TMangrove64TreeColumn<T> = {
     name: string;
     label: string;
-    fieldTarget: keyof T;
+    fieldTarget?: keyof T;
     cssClass?: string;
     align?: "left" | "center" | "right";
     format?: (node: T) => string;
 };
-export type TMangrove64TreeContextMenu<T extends object = object> = {
-    actions: {
-        label: string;
-        action: (node: T) => Promise<void> | void;
-        icon?: string;
-        cssClass?: string;
-    }[];
-    cssClass?: string;
-};
-export type TMangrove64TreeApi<T extends object = object> = {
+export type TMangrove64TreeApi<T> = {
     getSelectedKeys: () => Set<TTreeTableNodeKey>;
     getExpandedKeys: () => Set<TTreeTableNodeKey>;
     getNodeByKey: (nodeKey: TTreeTableNodeKey) => T | undefined;

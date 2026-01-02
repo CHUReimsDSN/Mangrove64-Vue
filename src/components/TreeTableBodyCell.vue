@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import { computed } from "vue";
 import type { TMangrove64TreeColumn } from "../models";
 import type {
@@ -23,7 +23,9 @@ const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
     return propsComponent.column.format(propsComponent.node);
   }
-  return propsComponent.node[propsComponent.column.fieldTarget];
+  if (propsComponent.column.fieldTarget) {
+    return propsComponent.node[propsComponent.column.fieldTarget];
+  }
 });
 const getcellCssClass = computed(() => {
   let classes = "tree-table-cell";

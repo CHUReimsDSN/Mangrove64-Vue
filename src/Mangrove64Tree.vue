@@ -341,6 +341,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
       if (!targetAttribute) {
         return false;
       }
+      console.log(moveEventTargetAttribute)
       moveEventTargetAttribute = targetAttribute;
 
       // determine mode
@@ -356,6 +357,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
               targetAttribute.replaceAll(fakeElementPrefix, "")
             );
       const targetHierarchy = hierarchiKeys.get(targetNodeKey);
+
       if (!targetHierarchy) {
         return false;
       }
@@ -879,7 +881,7 @@ onScopeDispose(() => {
       <table class="tree-table-table" :class="tableClass">
         <thead>
           <tr>
-            <template v-for="(col, i) in columnsRef" :key="col.fieldTarget">
+            <template v-for="(col, i) in columnsRef" :key="col.name">
               <TreeTableHeaderCell
                 :column="col"
                 :resizableColumns="propsComponent.resizableColumns"
@@ -911,7 +913,6 @@ onScopeDispose(() => {
               :row-css-class="propsComponent.rowCssClass"
               :cell-css-class="propsComponent.cellCssClass"
               :border-strategy="propsComponent.borderStrategy"
-              :context-menu="propsComponent.contextMenu"
               :slot-map="slotMap"
               :checkbox-color="propsComponent.checkboxColor"
               @node-expand-toggle="onNodeExpandToggle"
@@ -931,7 +932,6 @@ onScopeDispose(() => {
               :row-css-class="propsComponent.rowCssClass"
               :cell-css-class="propsComponent.cellCssClass"
               :border-strategy="propsComponent.borderStrategy"
-              :context-menu="propsComponent.contextMenu"
               :is-dragging="isDragging"
               @node-click="onNodeClick"
             />

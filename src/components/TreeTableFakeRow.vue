@@ -1,14 +1,12 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import { computed } from "vue";
 import type {
   TMangrove64TreeColumn,
-  TMangrove64TreeContextMenu,
 } from "../models";
 import type {
   TTreeTableBorderStrategy,
   TTreeTableNodeKey,
 } from "../private-models";
-import TreeTableContextMenu from "./TreeTableContextMenu.vue";
 
 // emits
 const emitsComponent = defineEmits<{
@@ -26,7 +24,6 @@ const propsComponent = defineProps<{
   hidden: boolean;
   level: number;
   indentationPx: number;
-  contextMenu: TMangrove64TreeContextMenu<T> | undefined;
   borderStrategy: TTreeTableBorderStrategy;
   rowCssClass: string | undefined;
   cellCssClass: string | undefined;
@@ -89,10 +86,5 @@ const getcellCssClass = computed(() => {
     <template v-for="col in propsComponent.columns" :key="col.name">
       <td :class="getcellCssClass"></td>
     </template>
-    <TreeTableContextMenu
-      v-if="propsComponent.contextMenu"
-      :context-menu="propsComponent.contextMenu"
-      :node="propsComponent.node"
-    />
   </tr>
 </template>
