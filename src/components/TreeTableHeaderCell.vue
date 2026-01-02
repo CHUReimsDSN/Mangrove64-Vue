@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends object">
+<script setup lang="ts" generic="T">
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import type { TMangrove64TreeColumn } from "../models";
 import type { TTreeTableBorderStrategy } from "../private-models";
