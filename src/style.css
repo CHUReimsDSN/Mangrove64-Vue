@@ -31,7 +31,7 @@
 .mangrove64-cell-header {
   padding: 0;
 }
-.mangrove64-cell-header-content {
+.mangrove64-cell-header-content  {
   position: relative;
   overflow: hidden;
   background-color: #ebf3fd;

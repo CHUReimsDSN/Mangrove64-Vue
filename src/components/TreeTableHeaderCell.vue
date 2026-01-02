@@ -101,7 +101,11 @@ const headerStyle = computed(() => {
   return `text-align: ${propsComponent.column.align ?? "left"};`;
 });
 const headerCssClasses = computed(() => {
-  return propsComponent.theme === 'dark' ? 'mangrove64-cell-header-content-dark' : 'mangrove64-cell-header-content'
+  let classes = "mangrove64-cell-header-content";
+  if (propsComponent.theme === 'dark') {
+    classes += " mangrove64-cell-header-content-dark"
+  }
+  return classes
 })
 const cellClass = computed(() => {
   let classes = "mangrove64-cell-header";
@@ -118,7 +122,6 @@ onMounted(() => {
   }
   const handleValue = handle.value;
   if (!handleValue) {
-    console.log('lsdflsdflsdflsdlf')
     return;
   }
   handleValue.addEventListener("mousedown", onMouseDown);
