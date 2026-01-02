@@ -49,21 +49,25 @@ const yo = /* @__PURE__ */ Je({
       a && (a = !1, document.body.style.cursor = "", document.body.style.userSelect = "", document.removeEventListener("mousemove", f), document.removeEventListener("mouseup", v), document.removeEventListener("touchmove", d), document.removeEventListener("touchend", w));
     }
     const L = oe(() => `text-align: ${t.column.align ?? "left"};`), U = oe(() => t.theme === "dark" ? "mangrove64-cell-header-content-dark" : "mangrove64-cell-header-content"), D = oe(() => {
-      let b = "";
+      let b = "mangrove64-cell-header";
       return t.borderStrategy !== "none" && (b += " mangrove64-bordered-ltrb"), b;
     });
     return On(() => {
       if (!t.resizableColumns)
         return;
       const b = e.value;
-      b && (b.addEventListener("mousedown", l), b.addEventListener("touchstart", s, { passive: !1 }));
+      if (!b) {
+        console.log("lsdflsdflsdflsdlf");
+        return;
+      }
+      b.addEventListener("mousedown", l), b.addEventListener("touchstart", s, { passive: !1 });
     }), ho(() => {
       if (!t.resizableColumns)
         return;
       const b = e.value;
       b && (b.removeEventListener("mousedown", l), b.removeEventListener("touchstart", s)), _();
     }), (b, A) => (O(), j("th", {
-      class: Pe(["mangrove64-cell-header", D.value]),
+      class: Pe(D.value),
       ref_key: "thEl",
       ref: n
     }, [

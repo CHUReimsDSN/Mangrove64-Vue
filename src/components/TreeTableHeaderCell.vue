@@ -104,7 +104,7 @@ const headerCssClasses = computed(() => {
   return propsComponent.theme === 'dark' ? 'mangrove64-cell-header-content-dark' : 'mangrove64-cell-header-content'
 })
 const cellClass = computed(() => {
-  let classes = "";
+  let classes = "mangrove64-cell-header";
   if (propsComponent.borderStrategy !== "none") {
     classes += " mangrove64-bordered-ltrb";
   }
@@ -118,6 +118,7 @@ onMounted(() => {
   }
   const handleValue = handle.value;
   if (!handleValue) {
+    console.log('lsdflsdflsdflsdlf')
     return;
   }
   handleValue.addEventListener("mousedown", onMouseDown);
@@ -137,7 +138,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <th class="mangrove64-cell-header" :class="cellClass" ref="thEl">
+  <th :class="cellClass" ref="thEl">
     <div :class="headerCssClasses" :style="headerStyle">
       {{ propsComponent.column.label }}
       <div
