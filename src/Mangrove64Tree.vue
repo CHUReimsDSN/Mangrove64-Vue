@@ -249,7 +249,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
               nodeRefOldIndex,
               recursiveChildrenCount + 1
             );
-            console.log(keyNewParent, recursiveChildrenCount, nodeRefOldIndex, nodesRefToMove)
             computeIndexKeys();
             const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
             if (keyNewParent !== null) {
@@ -354,8 +353,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
         movingMode === "child-to-previous" && event.willInsertAfter
           ? castAttributeToNodeKeyType(targetAttribute)
           : castAttributeToNodeKeyType(
-              targetAttribute.replaceAll(fakeElementPrefix, "")
-            );
+            targetAttribute.replaceAll(fakeElementPrefix, "")
+          );
       const targetHierarchy = hierarchiKeys.get(targetNodeKey);
 
       if (!targetHierarchy) {
@@ -667,10 +666,7 @@ function onNodeCheckboxToggle(node: T, state: boolean) {
         emitCallback = () => emitsComponent("node-select", node);
       } else {
         setSelectedKeys(nodeKey, state);
-        const parentNodeKey = hierarchiKeys.get(nodeKey)?.parent;
-        if (parentNodeKey) {
-          setSelectedKeys(parentNodeKey, state);
-        }
+        propagateSelectionUp(nodeKey, state)
         emitCallback = () => emitsComponent("node-unselect", node);
       }
       propagateSelectionDown(nodeKey, state);
@@ -688,13 +684,20 @@ function propagateSelectionDown(nodeKey: TTreeTableNodeKey, state: boolean) {
     return;
   }
   hierarchy.children.forEach((childNodeKey) => {
-    if (state) {
-      setSelectedKeys(childNodeKey, true);
-    } else {
-      setSelectedKeys(childNodeKey, false);
-    }
+    setSelectedKeys(childNodeKey, state);
     propagateSelectionDown(childNodeKey, state);
   });
+}
+function propagateSelectionUp(nodeKey: TTreeTableNodeKey, state: boolean) {
+  const hierarchy = hierarchiKeys.get(nodeKey);
+  if (!hierarchy) {
+    return;
+  }
+  setSelectedKeys(hierarchy.parent, state);
+  if (hierarchy.parent === rootHierarchyKey) {
+    return
+  }
+  propagateSelectionUp(hierarchy.parent, state);
 }
 function getElementFakeNodeKey(nodeKey: TTreeTableNodeKey) {
   return `${fakeElementPrefix}${nodeKey.toString()}`;
@@ -882,59 +885,29 @@ onScopeDispose(() => {
         <thead>
           <tr>
             <template v-for="(col, i) in columnsRef" :key="col.name">
-              <TreeTableHeaderCell
-                :column="col"
-                :resizableColumns="propsComponent.resizableColumns"
-                :index="i"
-                :borderStrategy="propsComponent.borderStrategy"
-              />
+              <TreeTableHeaderCell :column="col" :resizableColumns="propsComponent.resizableColumns" :index="i"
+                :borderStrategy="propsComponent.borderStrategy" />
             </template>
           </tr>
         </thead>
         <tbody ref="treeBodyEl" :key="rerenderTrick">
-          <template
-            v-for="node in nodesRef"
-            :key="node[propsComponent.nodeKey as keyof T]"
-          >
-            <TreeTableRow
-              :node="node"
-              :columns="columns"
-              :node-key="propsComponent.nodeKey as keyof T"
+          <template v-for="node in nodesRef" :key="node[propsComponent.nodeKey as keyof T]">
+            <TreeTableRow :node="node" :columns="columns" :node-key="propsComponent.nodeKey as keyof T"
               :children-key="propsComponent.childrenKey as keyof T"
-              :has-children-key="propsComponent.hasChildrenKey as keyof T"
-              :disabled-key="propsComponent.disabledKey"
-              :selectionMode="propsComponent.selectionMode"
-              :expanded="isNodeExpanded(node)"
-              :selected="isNodeSelected(node)"
-              :isLoading="isNodeLoading(node)"
-              :level="getNodeLevel(node)"
-              :hidden="isNodeHidden(node)"
-              :indentationPx="propsComponent.indentationPx"
-              :row-css-class="propsComponent.rowCssClass"
-              :cell-css-class="propsComponent.cellCssClass"
-              :border-strategy="propsComponent.borderStrategy"
-              :slot-map="slotMap"
-              :checkbox-color="propsComponent.checkboxColor"
-              @node-expand-toggle="onNodeExpandToggle"
-              @node-checkbox-toggle="onNodeCheckboxToggle"
-              @node-click="onNodeClick"
-            />
-            <TreeTableFakeRow
-              :node="node"
-              :columns="columns"
-              :node-key="propsComponent.nodeKey as keyof T"
-              :disabled-key="propsComponent.disabledKey"
-              :expanded="isNodeExpanded(node)"
-              :selected="isNodeSelected(node)"
-              :level="getNodeLevel(node)"
-              :hidden="isNodeHidden(node)"
-              :indentationPx="propsComponent.indentationPx"
-              :row-css-class="propsComponent.rowCssClass"
-              :cell-css-class="propsComponent.cellCssClass"
-              :border-strategy="propsComponent.borderStrategy"
-              :is-dragging="isDragging"
-              @node-click="onNodeClick"
-            />
+              :has-children-key="propsComponent.hasChildrenKey as keyof T" :disabled-key="propsComponent.disabledKey"
+              :selectionMode="propsComponent.selectionMode" :expanded="isNodeExpanded(node)"
+              :selected="isNodeSelected(node)" :isLoading="isNodeLoading(node)" :level="getNodeLevel(node)"
+              :hidden="isNodeHidden(node)" :indentationPx="propsComponent.indentationPx"
+              :row-css-class="propsComponent.rowCssClass" :cell-css-class="propsComponent.cellCssClass"
+              :border-strategy="propsComponent.borderStrategy" :slot-map="slotMap"
+              :checkbox-color="propsComponent.checkboxColor" @node-expand-toggle="onNodeExpandToggle"
+              @node-checkbox-toggle="onNodeCheckboxToggle" @node-click="onNodeClick" />
+            <TreeTableFakeRow :node="node" :columns="columns" :node-key="propsComponent.nodeKey as keyof T"
+              :disabled-key="propsComponent.disabledKey" :expanded="isNodeExpanded(node)"
+              :selected="isNodeSelected(node)" :level="getNodeLevel(node)" :hidden="isNodeHidden(node)"
+              :indentationPx="propsComponent.indentationPx" :row-css-class="propsComponent.rowCssClass"
+              :cell-css-class="propsComponent.cellCssClass" :border-strategy="propsComponent.borderStrategy"
+              :is-dragging="isDragging" @node-click="onNodeClick" />
           </template>
         </tbody>
       </table>
