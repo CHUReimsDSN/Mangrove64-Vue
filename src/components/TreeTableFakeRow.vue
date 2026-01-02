@@ -31,7 +31,7 @@ const propsComponent = defineProps<{
 }>();
 
 // consts
-const fakeElementPrefix = "__tree-table-fake-row-";
+const fakeElementPrefix = "__mangrove64-fake-row-";
 
 // functions
 function getNodeKeyValue(node: T) {

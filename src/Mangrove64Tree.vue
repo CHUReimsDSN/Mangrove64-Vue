@@ -75,8 +75,8 @@ let moveEventTargetAttribute: string | null = null;
 
 // consts
 const dataKeyAttribute = "data-key" as const;
-const fakeElementPrefix = "__tree-table-fake-row-" as const;
-const rootHierarchyKey = "__tree-table-null-hierarchy-key" as const;
+const fakeElementPrefix = "__mangrove64-fake-row-" as const;
+const rootHierarchyKey = "__mangrove64-null-hierarchy-key" as const;
 const slots = useSlots();
 const elementKeys: Map<TTreeTableNodeKey, HTMLElement> = new Map();
 const hierarchiKeys: Map<TTreeTableNodeKey, TTreeTableHierarchy> = new Map();
@@ -471,7 +471,7 @@ function setupElementsKeys(nodes: T[]) {
     return;
   }
   const allRowElement = [
-    ...treeBodyEl.value.querySelectorAll(".tree-table-row"),
+    ...treeBodyEl.value.querySelectorAll(".mangrove64-row"),
   ];
   nodes.forEach((node) => {
     const nodeKey = getNodeKeyValue(node);
@@ -889,7 +889,7 @@ onScopeDispose(() => {
 <template>
   <div>
     <div>
-      <table class="tree-table-table" :class="tableClass">
+      <table class="mangrove64-table" :class="tableClass">
         <thead>
           <tr>
             <template v-for="(col, i) in columnsRef" :key="col.name">

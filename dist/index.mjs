@@ -307,7 +307,7 @@ const yo = /* @__PURE__ */ Je({
       ], 64))), 128))
     ], 10, xo));
   }
-}), ko = ["data-key"], Ao = "__tree-table-fake-row-", No = /* @__PURE__ */ Je({
+}), ko = ["data-key"], Ao = "__mangrove64-fake-row-", No = /* @__PURE__ */ Je({
   __name: "TreeTableFakeRow",
   props: {
     node: {},
@@ -1947,7 +1947,7 @@ function Dt() {
 }
 E.mount(new ir());
 E.mount(un, cn);
-const Ae = "data-key", He = "__tree-table-fake-row-", Ue = "__tree-table-null-hierarchy-key", ur = /* @__PURE__ */ Je({
+const Ae = "data-key", He = "__mangrove64-fake-row-", Ue = "__mangrove64-null-hierarchy-key", ur = /* @__PURE__ */ Je({
   __name: "Mangrove64Tree",
   props: {
     nodes: {},
@@ -2190,7 +2190,7 @@ const Ae = "data-key", He = "__tree-table-fake-row-", Ue = "__tree-table-null-hi
       if (!U.value)
         return;
       const p = [
-        ...U.value.querySelectorAll(".tree-table-row")
+        ...U.value.querySelectorAll(".mangrove64-row")
       ];
       u.forEach((h) => {
         const x = H(h), X = p.find((M) => {
@@ -2457,7 +2457,7 @@ const Ae = "data-key", He = "__tree-table-fake-row-", Ue = "__tree-table-null-hi
     }), (u, p) => (O(), j("div", null, [
       qe("div", null, [
         qe("table", {
-          class: Pe(["tree-table-table", so.value])
+          class: Pe(["mangrove64-table", so.value])
         }, [
           qe("thead", null, [
             qe("tr", null, [
