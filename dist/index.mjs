@@ -2059,7 +2059,7 @@ const Oe = "data-key", Le = "__tree-table-fake-row-", at = "__tree-table-null-hi
                 $
               ));
             } else if (z === "child-to-previous") {
-              U.parent = q;
+              console.log(q), U.parent = q;
               const ne = s.get(q);
               ne && ne.children.unshift($);
             }
@@ -2125,7 +2125,7 @@ const Oe = "data-key", Le = "__tree-table-fake-row-", at = "__tree-table-null-hi
           const z = A.willInsertAfter ? A.related.getAttribute(Oe) : ($ = A.related.previousElementSibling) == null ? void 0 : $.getAttribute(Oe);
           if (!z)
             return !1;
-          console.log(i), i = z;
+          i = z;
           const q = z.includes(Le) ? "brother-to-previous" : "child-to-previous", _e = q === "child-to-previous" && A.willInsertAfter ? he(z) : he(
             z.replaceAll(Le, "")
           );

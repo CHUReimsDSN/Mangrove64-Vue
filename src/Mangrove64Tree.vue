@@ -227,6 +227,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
               );
             }
           } else if (movingMode === "child-to-previous") {
+            console.log(targetNodeKey)
             hierarchyMovingNode.parent = targetNodeKey;
             const targetHierarchy = hierarchiKeys.get(targetNodeKey);
             if (targetHierarchy) {
@@ -341,7 +342,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
       if (!targetAttribute) {
         return false;
       }
-      console.log(moveEventTargetAttribute)
       moveEventTargetAttribute = targetAttribute;
 
       // determine mode
