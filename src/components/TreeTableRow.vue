@@ -7,6 +7,7 @@ import type {
   TTreeTableNodeKey,
   TTreeTableSelectionMode,
   TTreeTableSlot,
+  TTreeTableTheme,
 } from "../private-models";
 import { computed } from "vue";
 import TreeTableBodyCell from "./TreeTableBodyCell.vue";
@@ -39,6 +40,7 @@ const propsComponent = defineProps<{
   cellCssClass: string | undefined;
   slotMap: Map<string, TTreeTableSlot<T>>;
   checkboxColor: string;
+  theme: TTreeTableTheme;
 }>();
 
 // functions
@@ -70,6 +72,9 @@ const rowClass = computed(() => {
   classes += ` ${propsComponent.rowCssClass}`;
   if (propsComponent.selected) {
     classes += " mangrove64-row-selected";
+    if (propsComponent.theme === 'dark') {
+      classes += ' mangrove64-row-selected-dark'
+    }
   }
   if (propsComponent.hidden) {
     classes += " mangrove64-row-hidden";
@@ -79,39 +84,17 @@ const rowClass = computed(() => {
 </script>
 
 <template>
-  <tr
-    @click="onNodeClick(propsComponent.node)"
-    :class="rowClass"
-    :data-key="getNodeKeyValue(propsComponent.node)"
-  >
+  <tr @click="onNodeClick(propsComponent.node)" :class="rowClass" :data-key="getNodeKeyValue(propsComponent.node)">
     <template v-for="(col, colIndex) in propsComponent.columns" :key="col.name">
-      <TreeTableBodyFirstRowCell
-        v-if="colIndex === 0"
-        :column="col"
-        :node="propsComponent.node"
-        :level="propsComponent.level"
-        :indentationPx="propsComponent.indentationPx"
-        :leaf="isNodeLeaf"
-        :expanded="propsComponent.expanded"
-        :disabled="isNodeDisabled"
-        :selected="propsComponent.selected"
-        :isLoading="propsComponent.isLoading"
-        :selectionMode="propsComponent.selectionMode"
-        :cell-css-class="propsComponent.cellCssClass"
-        :border-strategy="propsComponent.borderStrategy"
-        :slot-render="propsComponent.slotMap.get(col.name)"
-        :checkbox-color="propsComponent.checkboxColor"
-        @node-expand-toggle="nodeToggleExpand"
-        @node-checkbox-toggle="onToggleCheckbox"
-      />
-      <TreeTableBodyCell
-        v-else
-        :column="col"
-        :node="propsComponent.node"
-        :cell-css-class="propsComponent.cellCssClass"
-        :border-strategy="propsComponent.borderStrategy"
-        :slot-render="propsComponent.slotMap.get(col.name)"
-      />
+      <TreeTableBodyFirstRowCell v-if="colIndex === 0" :column="col" :node="propsComponent.node"
+        :level="propsComponent.level" :indentationPx="propsComponent.indentationPx" :leaf="isNodeLeaf"
+        :expanded="propsComponent.expanded" :disabled="isNodeDisabled" :selected="propsComponent.selected"
+        :isLoading="propsComponent.isLoading" :selectionMode="propsComponent.selectionMode"
+        :cell-css-class="propsComponent.cellCssClass" :border-strategy="propsComponent.borderStrategy"
+        :slot-render="propsComponent.slotMap.get(col.name)" :checkbox-color="propsComponent.checkboxColor"
+        @node-expand-toggle="nodeToggleExpand" @node-checkbox-toggle="onToggleCheckbox" />
+      <TreeTableBodyCell v-else :column="col" :node="propsComponent.node" :cell-css-class="propsComponent.cellCssClass"
+        :border-strategy="propsComponent.borderStrategy" :slot-render="propsComponent.slotMap.get(col.name)" />
     </template>
   </tr>
 </template>
