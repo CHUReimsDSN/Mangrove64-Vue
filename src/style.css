@@ -25,6 +25,9 @@
 .mangrove64-row-selected {
   background-color: #beebff;
 }
+.mangrove64-row-selected-dark {
+  background-color: #273135;
+}
 .mangrove64-row-hidden {
   display: none;
 }
@@ -58,6 +61,12 @@
 }
 .mangrove64-resize-handle:active {
   background-color: rgba(0, 0, 0, 0.3);
+}
+.mangrove64-resize-handle-dark:hover {
+  background-color: rgba(109, 109, 109, 0.3);
+}
+.mangrove64-resize-handle-dark:active {
+  background-color: rgba(109, 109, 109, 0.3);
 }
 .mangrove64-fake-row {
   height: 4px;

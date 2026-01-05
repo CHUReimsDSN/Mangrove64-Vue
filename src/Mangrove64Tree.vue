@@ -907,7 +907,7 @@ onScopeDispose(() => {
               :selected="isNodeSelected(node)" :isLoading="isNodeLoading(node)" :level="getNodeLevel(node)"
               :hidden="isNodeHidden(node)" :indentationPx="propsComponent.indentationPx"
               :row-css-class="propsComponent.rowCssClass" :cell-css-class="propsComponent.cellCssClass"
-              :border-strategy="propsComponent.borderStrategy" :slot-map="slotMap"
+              :border-strategy="propsComponent.borderStrategy" :slot-map="slotMap" :theme="themeMode"
               :checkbox-color="propsComponent.checkboxColor" @node-expand-toggle="onNodeExpandToggle"
               @node-checkbox-toggle="onNodeCheckboxToggle" @node-click="onNodeClick" />
             <TreeTableFakeRow :node="node" :columns="columns" :node-key="propsComponent.nodeKey as keyof T"
@@ -915,7 +915,7 @@ onScopeDispose(() => {
               :selected="isNodeSelected(node)" :level="getNodeLevel(node)" :hidden="isNodeHidden(node)"
               :indentationPx="propsComponent.indentationPx" :row-css-class="propsComponent.rowCssClass"
               :cell-css-class="propsComponent.cellCssClass" :border-strategy="propsComponent.borderStrategy"
-              :is-dragging="isDragging" @node-click="onNodeClick" />
+              :is-dragging="isDragging" :theme="themeMode" @node-click="onNodeClick" />
           </template>
         </tbody>
       </table>

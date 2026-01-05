@@ -6,6 +6,7 @@ import type {
 import type {
   TTreeTableBorderStrategy,
   TTreeTableNodeKey,
+  TTreeTableTheme,
 } from "../private-models";
 
 // emits
@@ -28,6 +29,7 @@ const propsComponent = defineProps<{
   rowCssClass: string | undefined;
   cellCssClass: string | undefined;
   isDragging: boolean;
+  theme: TTreeTableTheme;
 }>();
 
 // consts
@@ -50,6 +52,9 @@ const rowClass = computed(() => {
   classes += ` ${propsComponent.rowCssClass}`;
   if (propsComponent.selected) {
     classes += " mangrove64-row-selected";
+    if (propsComponent.theme === 'dark') {
+     classes += 'mangrove64-row-selected-dark' 
+    }
   }
   if (propsComponent.hidden) {
     classes += " mangrove64-row-hidden";

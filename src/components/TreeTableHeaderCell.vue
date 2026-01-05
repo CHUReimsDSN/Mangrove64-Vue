@@ -114,6 +114,13 @@ const cellClass = computed(() => {
   }
   return classes;
 });
+const handleCssClasses = computed(() => {
+  let classes = 'mangrove64-resize-handle'
+  if (propsComponent.theme === 'dark') {
+    classes += 'mangrove64-resize-handle-dark'
+  }
+  return classes
+})
 
 // lifeCycle
 onMounted(() => {
@@ -146,7 +153,7 @@ onBeforeUnmount(() => {
       {{ propsComponent.column.label }}
       <div
         v-if="propsComponent.resizableColumns"
-        class="mangrove64-resize-handle"
+        :class="handleCssClasses"
         ref="handle"
       ></div>
     </div>
