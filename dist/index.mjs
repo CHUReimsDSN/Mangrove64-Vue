@@ -56,7 +56,7 @@ const yo = /* @__PURE__ */ Je({
       return t.borderStrategy !== "none" && (E += " mangrove64-bordered-ltrb"), E;
     }), A = te(() => {
       let E = "mangrove64-resize-handle";
-      return t.theme === "dark" && (E += "mangrove64-resize-handle-dark"), E;
+      return t.theme === "dark" && (E += " mangrove64-resize-handle-dark"), E;
     });
     return On(() => {
       if (!t.resizableColumns)
@@ -275,7 +275,7 @@ const yo = /* @__PURE__ */ Je({
         return e.node[e.disabledKey];
     }), f = te(() => {
       let d = "mangrove64-row";
-      return d += ` ${e.rowCssClass}`, e.selected && (d += " mangrove64-row-selected", e.theme === "dark" && (d += "mangrove64-row-selected-dark")), e.hidden && (d += " mangrove64-row-hidden"), d;
+      return d += ` ${e.rowCssClass}`, e.selected && (d += " mangrove64-row-selected", e.theme === "dark" && (d += " mangrove64-row-selected-dark")), e.hidden && (d += " mangrove64-row-hidden"), d;
     });
     return (d, m) => (O(), U("tr", {
       onClick: m[0] || (m[0] = (v) => a(e.node)),
@@ -346,7 +346,7 @@ const yo = /* @__PURE__ */ Je({
     }
     const l = te(() => {
       let c = "mangrove64-row mangrove64-fake-row";
-      return c += ` ${e.rowCssClass}`, e.selected && (c += " mangrove64-row-selected", e.theme === "dark" && (c += "mangrove64-row-selected-dark")), e.hidden && (c += " mangrove64-row-hidden"), e.isDragging && (c += " mangrove64-fake-row-display"), c;
+      return c += ` ${e.rowCssClass}`, e.selected && (c += " mangrove64-row-selected", e.theme === "dark" && (c += " mangrove64-row-selected-dark")), e.hidden && (c += " mangrove64-row-hidden"), e.isDragging && (c += " mangrove64-fake-row-display"), c;
     }), s = te(() => {
       let c = "";
       switch (c += ` ${e.cellCssClass}`, e.borderStrategy) {

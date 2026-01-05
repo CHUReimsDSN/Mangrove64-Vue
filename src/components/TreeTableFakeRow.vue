@@ -53,7 +53,7 @@ const rowClass = computed(() => {
   if (propsComponent.selected) {
     classes += " mangrove64-row-selected";
     if (propsComponent.theme === 'dark') {
-     classes += 'mangrove64-row-selected-dark' 
+     classes += ' mangrove64-row-selected-dark' 
     }
   }
   if (propsComponent.hidden) {

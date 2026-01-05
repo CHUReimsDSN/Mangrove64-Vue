@@ -117,7 +117,7 @@ const cellClass = computed(() => {
 const handleCssClasses = computed(() => {
   let classes = 'mangrove64-resize-handle'
   if (propsComponent.theme === 'dark') {
-    classes += 'mangrove64-resize-handle-dark'
+    classes += ' mangrove64-resize-handle-dark'
   }
   return classes
 })
