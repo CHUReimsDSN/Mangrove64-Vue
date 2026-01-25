@@ -1,12 +1,13 @@
 ---
-title: Définitions
+title: Définition API
 ---
 
-# Définitions
+# Définition API
+
 
 ## TMangrove64TreeProps
 ```typescript
-type TMangrove64TreeProps<T extends object> = {
+export type TMangrove64TreeProps<T> = {
   nodes: T[];
   columns: TMangrove64TreeColumn<T>[];
   draggable?: boolean;
@@ -29,33 +30,30 @@ type TMangrove64TreeProps<T extends object> = {
   nodeKeyType?: TTreeTableNodeKeyType;
   checkboxColor?: string;
 };
-type TTreeTableNodeKey = string | number | symbol;
-type TTreeTableSelectionMode = 'unique' | 'multiple' | 'checkbox';
-type TTreeTableBorderStrategy = 'none' | 'vertical' | 'horizontal' | 'cell';
-type TTreeTableNodeKeyType = 'string' | 'symbol' | 'number';
 ```
+
 
 ## TMangrove64TreeColumn
 ```typescript
-type TMangrove64TreeColumn<T extends object> = {
+export type TMangrove64TreeColumn<T> = {
   name: string;
   label: string;
-  fieldTarget: keyof T;
+  fieldTarget?: keyof T;
   cssClass?: string;
   align?: "left" | "center" | "right";
   format?: (node: T) => string;
 };
 ```
 
-## TMangrove64TreeApi
 
+## TMangrove64TreeApi
 ```typescript
-type TMangrove64TreeApi<T extends object> = {
+export type TMangrove64TreeApi<T> = {
   getSelectedKeys: () => Set<TTreeTableNodeKey>;
   getExpandedKeys: () => Set<TTreeTableNodeKey>;
   getNodeByKey: (nodeKey: TTreeTableNodeKey) => T | undefined;
-  updateNode: (nodeKey: TTreeTableNodeKey, nodeData: T) => void;
-  addNode: (node: T, parentNodeKey: TTreeTableNodeKey, positionBelowParent: number) => void;
+  updateNode: (nodeData: T) => void;
+  addNode: (node: T) => void;
   removeNode: (nodeKey: TTreeTableNodeKey) => void;
 }
 ```

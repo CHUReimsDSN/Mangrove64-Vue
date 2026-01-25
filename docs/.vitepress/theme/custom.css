@@ -1,0 +1,20 @@
+:root {
+  --vp-c-brand-1: #366dd4;
+  --vp-c-brand-2: #205ba8;
+  --vp-button-brand-bg: #23548d;
+}
+
+.gradient-title {
+  background: linear-gradient(90deg, #4275d3, #a444e4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html:not(.dark) .DocSearch-Button {
+  background-color: #e6ebec !important;
+}
+
+html.dark .DocSearch-Button {
+  background-color: rgb(18, 18, 19) !important;
+}
