@@ -5,6 +5,9 @@ import type {
   TTreeTableSelectionMode,
 } from "./private-models";
 
+/**
+ * @exportToDoc
+ */
 export type TMangrove64TreeProps<T> = {
   nodes: T[];
   columns: TMangrove64TreeColumn<T>[];
@@ -28,6 +31,9 @@ export type TMangrove64TreeProps<T> = {
   nodeKeyType?: TTreeTableNodeKeyType;
   checkboxColor?: string;
 };
+/**
+ * @exportToDoc
+ */
 export type TMangrove64TreeColumn<T> = {
   name: string;
   label: string;
@@ -36,6 +42,9 @@ export type TMangrove64TreeColumn<T> = {
   align?: "left" | "center" | "right";
   format?: (node: T) => string;
 };
+/**
+ * @exportToDoc
+ */
 export type TMangrove64TreeApi<T> = {
   getSelectedKeys: () => Set<TTreeTableNodeKey>;
   getExpandedKeys: () => Set<TTreeTableNodeKey>;
