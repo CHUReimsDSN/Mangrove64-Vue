@@ -2303,7 +2303,7 @@ const Oe = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
               children: []
             }), y.value.set(ge, O + 1);
           });
-          const R = [...Ct(u), ...C].filter((L, ge, be) => be.map((Le) => F(Le)).indexOf(F(L)) === 1);
+          const R = [...Ct(u), ...C].filter((L, ge, be) => be.map((Le) => F(Le)).indexOf(F(L)) === -1);
           pn(u, R), h.value.splice(Z + 1, 0, ...R), ve(), _t(() => {
             se(R), v.value.has(f) && (Q(f, !0), Ge(f, !0)), $.value.delete(f);
           });
