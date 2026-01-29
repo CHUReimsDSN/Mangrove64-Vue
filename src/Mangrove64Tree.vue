@@ -125,7 +125,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
     onStart: () => {
       isDragging.value = true;
     },
-    onEnd: (event) => {
+    onEnd: async (event) => {
       const nodeAttribute = event.item.getAttribute(dataKeyAttribute);
       if (!nodeAttribute) {
         isDragging.value = false;
@@ -264,7 +264,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
             computeIndexKeys();
             if (emitNodesMoveData.positionStartInParent === -1) {
-              emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 1 : newPositionInParent + 2
+              console.log(willInsertAfter.value ?? 'dfgdfg')
+              emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
             }
             emitNodesMoveData.keyNewParent = keyNewParent
             emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
@@ -273,7 +274,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
 
       // trigger nodes-moves
       if (emitNodesMoveData.nodesToMove.length > 0) {
-        emitsComponent(
+        await emitsComponent(
           "nodes-move",
           emitNodesMoveData.nodesToMove,
           emitNodesMoveData.keyNewParent,
@@ -302,6 +303,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         }
       }
 
+      // end
       isDragging.value = false;
       moveEventTargetAttribute = null;
       rerenderTrick.value++;
@@ -580,7 +582,7 @@ function onNodeClick(node: T) {
   }
   emitCallback();
 }
-function lazyLoad(node: T) {
+async function lazyLoad(node: T) {
   const nodeKey = getNodeKeyValue(node);
   loadingKeys.value.add(nodeKey);
   const doneCallback = (newChildrenNode: T[]) => {
@@ -623,7 +625,7 @@ function lazyLoad(node: T) {
       loadingKeys.value.delete(nodeKey);
     });
   };
-  emitsComponent("lazy-load-children", {
+  await emitsComponent("lazy-load-children", {
     node: node,
     nodeKey: nodeKey,
     done: doneCallback,
