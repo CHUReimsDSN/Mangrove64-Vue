@@ -2283,7 +2283,7 @@ const Me = "data-key", ze = "__mangrove64-fake-row-", Ue = "__mangrove64-null-hi
         if (g.value.add(Y(u)), r("node-expand", u), gn(u))
           return;
         const C = zt(u);
-        if (C.length > 0 || m) {
+        if (C.length > 0 && !m) {
           const M = hn(u);
           if (!M)
             return;

@@ -575,7 +575,7 @@ function onNodeExpandToggle(node: T, state: boolean, forceLazyLoad = false) {
       return;
     }
     const nodeChildren = getNodeChildren(node)
-    if (nodeChildren.length > 0 || forceLazyLoad) {
+    if (nodeChildren.length > 0 && !forceLazyLoad) {
       const hierarchy = getNodeHierarchy(node);
       if (!hierarchy) {
         return;
