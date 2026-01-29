@@ -258,7 +258,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
             computeIndexKeys();
-            const computedPositionInParent = willInsertAfter.value ? newPositionInParent : newPositionInParent + 1
+            const computedPositionInParent = willInsertAfter.value ? newPositionInParent + 1 : newPositionInParent + 2
             emitsComponent(
               "node-move",
               nodesRefToMove[0]!,
@@ -574,6 +574,7 @@ function onNodeExpandToggle(node: T, state: boolean) {
     if (isNodeLeaf(node)) {
       return;
     }
+    console.log(getNodeChildren(node).length > 0)
     if (getNodeChildren(node).length > 0) {
       const hierarchy = getNodeHierarchy(node);
       if (!hierarchy) {
