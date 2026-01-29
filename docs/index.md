@@ -16,7 +16,7 @@ hero:
 features:
   - title: Flexibilité
     details: Chargement dynamique des données ou non
-    icon: 🧩
+    icon: 🌀
   - title: Intéraction
     details: Sélection, drag & drop
     icon: 🔔
