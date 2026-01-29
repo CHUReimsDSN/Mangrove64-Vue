@@ -2093,7 +2093,7 @@ const Ne = "data-key", ze = "__mangrove64-fake-row-", Ue = "__mangrove64-null-hi
                 }
               }
               Qn(ot[0], ie), Zn(ot[0], be), f.value.splice(ho + 1, 0, ...ot), me();
-              const po = w.value ? be + 1 : be;
+              const po = w.value ? be : be + 1;
               r(
                 "node-move",
                 ot[0],
