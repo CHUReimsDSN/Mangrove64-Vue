@@ -606,8 +606,11 @@ function lazyLoad(node: T) {
       });
       levelKeys.value.set(childNodeKey, nodeLevel + 1);
     });
-    const allChildrenNode = [...getNodeChildren(node), ...newChildrenNode]
-
+    const allChildrenNode = [...getNodeChildren(node), ...newChildrenNode].filter((nodeFilter, _indexFilter, arrayFilter) => {
+      return arrayFilter.map((nodeMap) => {
+        return getNodeKeyValue(nodeMap)
+      }).indexOf(getNodeKeyValue(nodeFilter)) === 1
+    })
     setNodeChildren(node, allChildrenNode);
     nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
     computeIndexKeys();
