@@ -119,7 +119,7 @@ watch(
         dense
         :color="propsComponent.checkboxColor"
         :disabled="propsComponent.disabled"
-      />{{ propsComponent.isLoading }}
+      />
       <template v-if="!propsComponent.isLoading">
         <template v-if="!propsComponent.leaf">
           <q-icon

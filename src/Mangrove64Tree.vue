@@ -606,6 +606,7 @@ function onNodeExpandToggle(node: T, state: boolean) {
             setSelectedKeys(nodeKey, true);
             propagateSelectionDown(nodeKey, true);
           }
+          loadingKeys.value.delete(nodeKey);
         });
       };
       emitsComponent("lazy-load-children", {
@@ -613,7 +614,6 @@ function onNodeExpandToggle(node: T, state: boolean) {
         nodeKey: nodeKey,
         done: doneCallback,
       });
-      loadingKeys.value.delete(nodeKey);
     }
   } else {
     expandedKeys.value.delete(getNodeKeyValue(node));
@@ -747,6 +747,8 @@ function isNodeSelected(node: T) {
 }
 function isNodeLoading(node: T) {
   const nodeKey = getNodeKeyValue(node);
+  console.log(nodeKey)
+  console.log(loadingKeys.value)
   return loadingKeys.value.has(nodeKey);
 }
 function isNodeHidden(node: T) {
