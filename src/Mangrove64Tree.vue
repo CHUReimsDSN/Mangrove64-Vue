@@ -284,7 +284,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
             if (isNodeLeaf(node)) {
               setNodeLeaf(node, false)
             }
-            onNodeExpandToggle(node, true)
+            onNodeExpandToggle(node, true, true)
           }
         }
       }
@@ -567,15 +567,15 @@ function onNodeClick(node: T) {
   }
   emitCallback();
 }
-function onNodeExpandToggle(node: T, state: boolean) {
+function onNodeExpandToggle(node: T, state: boolean, forceLazyLoad = false) {
   if (state) {
     expandedKeys.value.add(getNodeKeyValue(node));
     emitsComponent("node-expand", node);
     if (isNodeLeaf(node)) {
       return;
     }
-    console.log(getNodeChildren(node).length > 0)
-    if (getNodeChildren(node).length > 0) {
+    const nodeChildren = getNodeChildren(node)
+    if (nodeChildren.length > 0 || forceLazyLoad) {
       const hierarchy = getNodeHierarchy(node);
       if (!hierarchy) {
         return;
@@ -584,7 +584,7 @@ function onNodeExpandToggle(node: T, state: boolean) {
     } else {
       const nodeKey = getNodeKeyValue(node);
       loadingKeys.value.add(nodeKey);
-      const doneCallback = (childrenNode: T[]) => {
+      const doneCallback = (newChildrenNode: T[]) => {
         const targetIndex = indexKeys.get(nodeKey);
         if (targetIndex === undefined) {
           return;
@@ -592,14 +592,14 @@ function onNodeExpandToggle(node: T, state: boolean) {
         const oldHierarchy = hierarchiKeys.get(nodeKey);
         hierarchiKeys.set(nodeKey, {
           parent: oldHierarchy?.parent ?? rootHierarchyKey,
-          children: childrenNode.sort((nodeA, nodeB) => {
+          children: newChildrenNode.sort((nodeA, nodeB) => {
             return getNodeOrder(nodeB) - getNodeOrder(nodeA);
           }).map((childNode) => {
             return getNodeKeyValue(childNode);
           }),
         });
         const nodeLevel = levelKeys.value.get(nodeKey) ?? 0;
-        childrenNode.forEach((childNode) => {
+        newChildrenNode.forEach((childNode) => {
           const childNodeKey = getNodeKeyValue(childNode);
           hierarchiKeys.set(childNodeKey, {
             parent: nodeKey,
@@ -607,11 +607,12 @@ function onNodeExpandToggle(node: T, state: boolean) {
           });
           levelKeys.value.set(childNodeKey, nodeLevel + 1);
         });
-        setNodeChildren(node, childrenNode);
-        nodesRef.value.splice(targetIndex + 1, 0, ...childrenNode);
+        const allChildrneNode = [...nodeChildren, ...newChildrenNode]
+        setNodeChildren(node, allChildrneNode);
+        nodesRef.value.splice(targetIndex + 1, 0, ...newChildrenNode);
         computeIndexKeys();
         void nextTick(() => {
-          setupElementsKeys(childrenNode);
+          setupElementsKeys(newChildrenNode);
           if (selectedKeys.value.has(nodeKey)) {
             setSelectedKeys(nodeKey, true);
             propagateSelectionDown(nodeKey, true);
