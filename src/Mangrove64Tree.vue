@@ -159,6 +159,11 @@ function useSortable(el: Ref<HTMLElement | null>) {
       }
 
       // update moving nodes hierarchy and levels
+      const emitNodesMoveData = {
+        nodesToMove: <T[]>[],
+        keyNewParent: <TTreeTableNodeKey | null>null,
+        positionStartInParent: -1
+      }
       let hasResetParentChildren = false;
       [...selectedKeys.value]
         .sort((selectedA, selectedB) => {
@@ -258,15 +263,23 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
             computeIndexKeys();
-            const computedPositionInParent = willInsertAfter.value ? newPositionInParent + 1 : newPositionInParent + 2
-            emitsComponent(
-              "node-move",
-              nodesRefToMove[0]!,
-              keyNewParent,
-              computedPositionInParent,
-            );
+            if (emitNodesMoveData.positionStartInParent === -1) {
+              emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 1 : newPositionInParent + 2
+            }
+            emitNodesMoveData.keyNewParent = keyNewParent
+            emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
           }
         });
+
+      // trigger nodes-moves
+      if (emitNodesMoveData.nodesToMove.length > 0) {
+        emitsComponent(
+          "nodes-move",
+          emitNodesMoveData.nodesToMove,
+          emitNodesMoveData.keyNewParent,
+          emitNodesMoveData.positionStartInParent,
+        );
+      }
 
       // re-adjust fake rows and toggle node if not toggled
       if (movingMode === "child-to-previous") {
@@ -284,7 +297,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
             if (isNodeLeaf(node)) {
               setNodeLeaf(node, false)
             }
-            onNodeExpandToggle(node, true, true)
+            lazyLoad(node)
           }
         }
       }
@@ -567,64 +580,67 @@ function onNodeClick(node: T) {
   }
   emitCallback();
 }
-function onNodeExpandToggle(node: T, state: boolean, forceLazyLoad = false) {
+function lazyLoad(node: T) {
+  const nodeKey = getNodeKeyValue(node);
+  loadingKeys.value.add(nodeKey);
+  const doneCallback = (newChildrenNode: T[]) => {
+    const targetIndex = indexKeys.get(nodeKey);
+    if (targetIndex === undefined) {
+      return;
+    }
+    const oldHierarchy = hierarchiKeys.get(nodeKey);
+    hierarchiKeys.set(nodeKey, {
+      parent: oldHierarchy?.parent ?? rootHierarchyKey,
+      children: newChildrenNode.sort((nodeA, nodeB) => {
+        return getNodeOrder(nodeB) - getNodeOrder(nodeA);
+      }).map((childNode) => {
+        return getNodeKeyValue(childNode);
+      }),
+    });
+    const nodeLevel = levelKeys.value.get(nodeKey) ?? 0;
+    newChildrenNode.forEach((childNode) => {
+      const childNodeKey = getNodeKeyValue(childNode);
+      hierarchiKeys.set(childNodeKey, {
+        parent: nodeKey,
+        children: [],
+      });
+      levelKeys.value.set(childNodeKey, nodeLevel + 1);
+    });
+    const allChildrenNode = [...getNodeChildren(node), ...newChildrenNode]
+
+    setNodeChildren(node, allChildrenNode);
+    nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
+    computeIndexKeys();
+    void nextTick(() => {
+      setupElementsKeys(allChildrenNode);
+      if (selectedKeys.value.has(nodeKey)) {
+        setSelectedKeys(nodeKey, true);
+        propagateSelectionDown(nodeKey, true);
+      }
+      loadingKeys.value.delete(nodeKey);
+    });
+  };
+  emitsComponent("lazy-load-children", {
+    node: node,
+    nodeKey: nodeKey,
+    done: doneCallback,
+  });
+}
+function onNodeExpandToggle(node: T, state: boolean) {
   if (state) {
     expandedKeys.value.add(getNodeKeyValue(node));
     emitsComponent("node-expand", node);
     if (isNodeLeaf(node)) {
       return;
     }
-    const nodeChildren = getNodeChildren(node)
-    if (nodeChildren.length > 0 && !forceLazyLoad) {
+    if (getNodeChildren(node).length > 0) {
       const hierarchy = getNodeHierarchy(node);
       if (!hierarchy) {
         return;
       }
       setChildrenHideState(hierarchy, false, false);
     } else {
-      const nodeKey = getNodeKeyValue(node);
-      loadingKeys.value.add(nodeKey);
-      const doneCallback = (newChildrenNode: T[]) => {
-        const targetIndex = indexKeys.get(nodeKey);
-        if (targetIndex === undefined) {
-          return;
-        }
-        const oldHierarchy = hierarchiKeys.get(nodeKey);
-        hierarchiKeys.set(nodeKey, {
-          parent: oldHierarchy?.parent ?? rootHierarchyKey,
-          children: newChildrenNode.sort((nodeA, nodeB) => {
-            return getNodeOrder(nodeB) - getNodeOrder(nodeA);
-          }).map((childNode) => {
-            return getNodeKeyValue(childNode);
-          }),
-        });
-        const nodeLevel = levelKeys.value.get(nodeKey) ?? 0;
-        newChildrenNode.forEach((childNode) => {
-          const childNodeKey = getNodeKeyValue(childNode);
-          hierarchiKeys.set(childNodeKey, {
-            parent: nodeKey,
-            children: [],
-          });
-          levelKeys.value.set(childNodeKey, nodeLevel + 1);
-        });
-        const allChildrneNode = [...nodeChildren, ...newChildrenNode]
-        setNodeChildren(node, allChildrneNode);
-        nodesRef.value.splice(targetIndex + 1, 0, ...newChildrenNode);
-        computeIndexKeys();
-        void nextTick(() => {
-          setupElementsKeys(newChildrenNode);
-          if (selectedKeys.value.has(nodeKey)) {
-            setSelectedKeys(nodeKey, true);
-            propagateSelectionDown(nodeKey, true);
-          }
-          loadingKeys.value.delete(nodeKey);
-        });
-      };
-      emitsComponent("lazy-load-children", {
-        node: node,
-        nodeKey: nodeKey,
-        done: doneCallback,
-      });
+      lazyLoad(node)
     }
   } else {
     expandedKeys.value.delete(getNodeKeyValue(node));
