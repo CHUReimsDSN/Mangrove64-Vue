@@ -268,7 +268,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
           }
         });
 
-      // re-adjust fake rows
+      // re-adjust fake rows and toggle node if not toggled
       if (movingMode === "child-to-previous") {
         const targetElementFake = elementKeys.get(
           getElementFakeNodeKey(targetNodeKey)
@@ -277,6 +277,15 @@ function useSortable(el: Ref<HTMLElement | null>) {
           const parentElement = targetElementFake.parentElement;
           parentElement.removeChild(targetElementFake);
           parentElement.insertBefore(targetElementFake, event.item);
+        }
+        if (!expandedKeys.value.has(targetNodeKey)) {
+          const node = getNodeByKey(targetNodeKey)
+          if (node) {
+            if (isNodeLeaf(node)) {
+              setNodeLeaf(node, false)
+            }
+            onNodeExpandToggle(node, true)
+          }
         }
       }
 
@@ -710,9 +719,15 @@ function setNodeOrder(node: T, orderWithinParent: number) {
   if (!propsComponent.orderKey) {
     return;
   }
-  (node as { [K in keyof typeof node]: TTreeTableNodeKey | null })[
+  (node as { [K in keyof typeof node]: number })[
     propsComponent.orderKey as keyof T
   ] = orderWithinParent;
+}
+function setNodeLeaf(node: T, state: boolean) {
+  if (!propsComponent.hasChildrenKey) {
+    return
+  }
+  (node as { [K in keyof typeof node]: boolean })[propsComponent.hasChildrenKey as keyof T] = state
 }
 function getNodeParentKey(node: T) {
   return (node[propsComponent.parentKey as keyof T]) as TTreeTableNodeKey | undefined;
@@ -747,8 +762,6 @@ function isNodeSelected(node: T) {
 }
 function isNodeLoading(node: T) {
   const nodeKey = getNodeKeyValue(node);
-  console.log(nodeKey)
-  console.log(loadingKeys.value)
   return loadingKeys.value.has(nodeKey);
 }
 function isNodeHidden(node: T) {
