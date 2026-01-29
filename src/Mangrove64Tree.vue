@@ -297,7 +297,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
             if (isNodeLeaf(node)) {
               setNodeLeaf(node, false)
             }
-            lazyLoad(node)
+            await lazyLoad(node)
           }
         }
       }
@@ -612,9 +612,9 @@ async function lazyLoad(node: T) {
         return getNodeKeyValue(nodeMap)
       }).indexOf(getNodeKeyValue(nodeFilter)) === indexFilter
     })
-    console.log(allChildrenNode)
     setNodeChildren(node, allChildrenNode);
     nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
+    console.log(nodesRef.value)
     computeIndexKeys();
     void nextTick(() => {
       setupElementsKeys(allChildrenNode);
