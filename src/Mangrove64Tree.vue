@@ -271,7 +271,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
           }
         });
 
-      // trigger nodes-moves
+      // trigger nodes-moves and purge inserted ones
       if (emitNodesMoveData.nodesToMove.length > 0) {
         await emitsComponent(
           "nodes-move",
@@ -279,6 +279,11 @@ function useSortable(el: Ref<HTMLElement | null>) {
           emitNodesMoveData.keyNewParent,
           emitNodesMoveData.positionStartInParent,
         );
+        let indexParent = 0
+        if (emitNodesMoveData.keyNewParent !== null) {
+          indexParent = (indexKeys.get(emitNodesMoveData.keyNewParent) ?? 0) + emitNodesMoveData.positionStartInParent
+        }
+        nodesRef.value.splice(indexParent, emitNodesMoveData.nodesToMove.length)
       }
 
       // re-adjust fake rows and toggle node if not toggled
@@ -614,7 +619,6 @@ async function lazyLoad(node: T) {
     })
     setNodeChildren(node, allChildrenNode);
     nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
-    console.log(nodesRef.value)
     computeIndexKeys();
     void nextTick(() => {
       setupElementsKeys(allChildrenNode);
