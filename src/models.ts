@@ -58,10 +58,10 @@ export type TMangrove64TreeApi<T = object> = {
  * @exportToDoc
  */
 export type TMangrove64Emits<T = object> = {
-  (e: "node-expand", node: T): void;
-  (e: "node-collapse", node: T): void;
-  (e: "node-select", node: T): void;
-  (e: "node-unselect", node: T): void;
+  (e: "node-expand", node: T): Promise<void> | void;
+  (e: "node-collapse", node: T): Promise<void> | void;
+  (e: "node-select", node: T): Promise<void> | void;
+  (e: "node-unselect", node: T): Promise<void> | void;
   (
     e: "lazy-load-children",
     params: {
@@ -69,11 +69,11 @@ export type TMangrove64Emits<T = object> = {
       nodeKey: TTreeTableNodeKey;
       done: (node: T[]) => Promise<void> | void;
     },
-  ): void;
+  ): Promise<void> | void;
   (
-    e: "node-move",
-    node: T,
+    e: "nodes-move",
+    nodes: T[],
     parentKey: TTreeTableNodeKey | null,
-    positionWithinParent: number,
-  ): void;
+    positionStartWithinParent: number,
+  ): Promise<void> | void;
 };
