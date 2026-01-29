@@ -60,5 +60,5 @@ export type TMangrove64Emits<T = object> = {
         nodeKey: TTreeTableNodeKey;
         done: (node: T[]) => Promise<void> | void;
     }): void;
-    (e: "node-move", node: T, parentKey: TTreeTableNodeKey | null, positionWithinParent: number, willInsertAfter: boolean): void;
+    (e: "node-move", node: T, parentKey: TTreeTableNodeKey | null, positionWithinParent: number): void;
 };
