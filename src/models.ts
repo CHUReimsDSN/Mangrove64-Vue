@@ -52,7 +52,7 @@ export type TMangrove64TreeApi<T = object> = {
   updateNode: (nodeData: T) => void;
   addNode: (node: T) => void;
   removeNode: (nodeKey: TTreeTableNodeKey) => void;
-}
+};
 
 /**
  * @exportToDoc
@@ -68,13 +68,12 @@ export type TMangrove64Emits<T = object> = {
       node: T;
       nodeKey: TTreeTableNodeKey;
       done: (node: T[]) => Promise<void> | void;
-    }
+    },
   ): void;
   (
     e: "node-move",
     node: T,
     parentKey: TTreeTableNodeKey | null,
     positionWithinParent: number,
-    willInsertAfter: boolean
   ): void;
-}
+};

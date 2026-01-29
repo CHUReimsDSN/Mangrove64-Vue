@@ -258,12 +258,12 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
             computeIndexKeys();
+            const computedPositionInParent = willInsertAfter.value ? newPositionInParent - 1 : newPositionInParent
             emitsComponent  (
               "node-move",
               nodesRefToMove[0]!,
               keyNewParent,
               newPositionInParent,
-              willInsertAfter.value
             );
           }
         });
