@@ -18,6 +18,7 @@ import type {
   TMangrove64TreeProps,
   TMangrove64TreeColumn,
   TMangrove64TreeApi,
+  TMangrove64Emits,
 } from "./models";
 import type {
   TTreeTableHierarchy,
@@ -46,26 +47,8 @@ const propsComponent = withDefaults(defineProps<TMangrove64TreeProps<T>>(), {
 });
 
 // emits
-const emitsComponent = defineEmits<{
-  (e: "node-expand", node: T): void;
-  (e: "node-collapse", node: T): void;
-  (e: "node-select", node: T): void;
-  (e: "node-unselect", node: T): void;
-  (
-    e: "lazy-load-children",
-    params: {
-      node: T;
-      nodeKey: TTreeTableNodeKey;
-      done: (node: T[]) => Promise<void> | void;
-    }
-  ): void;
-  (
-    e: "node-move",
-    node: T,
-    parentKey: TTreeTableNodeKey | null,
-    positionWithinParent: number
-  ): void;
-}>();
+
+const emitsComponent = defineEmits<TMangrove64Emits<T>>();
 
 // slots
 defineSlots<Record<string, TTreeTableSlot<T>>>();
@@ -96,6 +79,7 @@ const loadingKeys = ref<Set<TTreeTableNodeKey>>(new Set());
 const treeBodyEl = ref<HTMLElement | null>(null);
 const isReady = ref(false);
 const isDragging = ref(false);
+const willInsertAfter = ref(false);
 const rerenderTrick = ref(0);
 const themeMode = ref<TTreeTableTheme>('light')
 
@@ -274,11 +258,12 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
             computeIndexKeys();
-            emitsComponent(
+            emitsComponent  (
               "node-move",
               nodesRefToMove[0]!,
               keyNewParent,
-              newPositionInParent
+              newPositionInParent,
+              willInsertAfter.value
             );
           }
         });
@@ -337,7 +322,9 @@ function useSortable(el: Ref<HTMLElement | null>) {
       if (nodeAttribute.includes(fakeElementPrefix)) {
         return false;
       }
-      const targetAttribute = event.willInsertAfter
+      willInsertAfter.value = event.willInsertAfter ?? false
+
+      const targetAttribute = willInsertAfter.value
         ? event.related.getAttribute(dataKeyAttribute)
         : event.related.previousElementSibling?.getAttribute(dataKeyAttribute);
       if (!targetAttribute) {
@@ -352,7 +339,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
           : "child-to-previous";
 
       const targetNodeKey =
-        movingMode === "child-to-previous" && event.willInsertAfter
+        movingMode === "child-to-previous" && willInsertAfter.value
           ? castAttributeToNodeKeyType(targetAttribute)
           : castAttributeToNodeKeyType(
             targetAttribute.replaceAll(fakeElementPrefix, "")
