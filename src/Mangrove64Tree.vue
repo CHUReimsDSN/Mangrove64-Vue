@@ -264,7 +264,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
             computeIndexKeys();
             if (emitNodesMoveData.positionStartInParent === -1) {
-              console.log(willInsertAfter.value ?? 'dfgdfg')
               emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
             }
             emitNodesMoveData.keyNewParent = keyNewParent
@@ -613,6 +612,7 @@ async function lazyLoad(node: T) {
         return getNodeKeyValue(nodeMap)
       }).indexOf(getNodeKeyValue(nodeFilter)) === indexFilter
     })
+    console.log(allChildrenNode)
     setNodeChildren(node, allChildrenNode);
     nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
     computeIndexKeys();
