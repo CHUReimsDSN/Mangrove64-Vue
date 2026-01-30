@@ -2123,9 +2123,9 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
             }
           }
           N.value = !1, i = null, K.value++, St(() => {
-            l.clear(), pe(h.value), le.stop(), le.start(), v.value.forEach((I) => {
+            be(), l.clear(), pe(h.value), le.stop(), le.start(), v.value.forEach((I) => {
               Y(I, !0);
-            }), be();
+            });
           });
         },
         onSelect: (A) => {

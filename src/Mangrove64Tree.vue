@@ -313,6 +313,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
       moveEventTargetAttribute = null;
       rerenderTrick.value++;
       void nextTick(() => {
+        uniquizNodes()
         elementKeys.clear();
         setupElementsKeys(nodesRef.value);
         hook.stop();
@@ -320,7 +321,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
-        uniquizNodes()
       });
     },
     onSelect: (event) => {
