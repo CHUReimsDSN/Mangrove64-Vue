@@ -321,7 +321,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
-      }, 1000)
+      }, 5000)
     },
     onSelect: (event) => {
       const nodeKey = event.item.getAttribute(dataKeyAttribute);
