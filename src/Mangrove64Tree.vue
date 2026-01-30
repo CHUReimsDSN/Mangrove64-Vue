@@ -238,49 +238,51 @@ function useSortable(el: Ref<HTMLElement | null>) {
           }
 
           // nodesref update
-          // if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
-          //   const keyNewParent =
-          //     hierarchyMovingNode.parent === rootHierarchyKey
-          //       ? null
-          //       : hierarchyMovingNode.parent;
-          //   const recursiveChildrenCount = getRecursiveChildrenCount(
-          //     movingNodeKey,
-          //     0
-          //   );
-          //   const nodeRefOldIndex = indexKeys.get(movingNodeKey) ?? 0;
-          //   const nodesRefToMove = nodesRef.value.splice(
-          //     nodeRefOldIndex,
-          //     recursiveChildrenCount + 1
-          //   );
-          //   computeIndexKeys();
-          //   const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
-          //   if (keyNewParent !== null) {
-          //     const parentNodeIndex = indexKeys.get(keyNewParent);
-          //     if (parentNodeIndex !== undefined) {
-          //       const parentNode = nodesRef.value[parentNodeIndex]!;
-          //       let parentChildren: T[] = [];
-          //       if (!hasResetParentChildren) {
-          //         parentChildren = [];
-          //         hasResetParentChildren = true;
-          //       } else {
-          //         parentChildren = parentChildren.concat(
-          //           getNodeChildren(parentNode)
-          //         );
-          //       }
-          //       parentChildren.push(nodesRefToMove[0]!);
-          //       setNodeChildren(parentNode, parentChildren);
-          //     }
-          //   }
-          //   setNodeParent(nodesRefToMove[0]!, keyNewParent);
-          //   setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
-          //   nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
-          //   computeIndexKeys();
-          //   if (emitNodesMoveData.positionStartInParent === -1) {
-          //     emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
-          //   }
-          //   emitNodesMoveData.keyNewParent = keyNewParent
-          //   emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
-          // }
+          if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
+            const keyNewParent =
+              hierarchyMovingNode.parent === rootHierarchyKey
+                ? null
+                : hierarchyMovingNode.parent;
+            const recursiveChildrenCount = getRecursiveChildrenCount(
+              movingNodeKey,
+              0
+            );
+            const nodeRefOldIndex = indexKeys.get(movingNodeKey) ?? 0;
+            console.log(nodeRefOldIndex)
+            const nodesRefToMove = nodesRef.value.splice(
+              nodeRefOldIndex,
+              recursiveChildrenCount + 1
+            );
+            computeIndexKeys();
+            const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
+            console.log(nodeRefNewIndex)
+            if (keyNewParent !== null) {
+              const parentNodeIndex = indexKeys.get(keyNewParent);
+              if (parentNodeIndex !== undefined) {
+                const parentNode = nodesRef.value[parentNodeIndex]!;
+                let parentChildren: T[] = [];
+                if (!hasResetParentChildren) {
+                  parentChildren = [];
+                  hasResetParentChildren = true;
+                } else {
+                  parentChildren = parentChildren.concat(
+                    getNodeChildren(parentNode)
+                  );
+                }
+                parentChildren.push(nodesRefToMove[0]!);
+                setNodeChildren(parentNode, parentChildren);
+              }
+            }
+            setNodeParent(nodesRefToMove[0]!, keyNewParent);
+            setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
+            nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
+            computeIndexKeys();
+            if (emitNodesMoveData.positionStartInParent === -1) {
+              emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
+            }
+            emitNodesMoveData.keyNewParent = keyNewParent
+            emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
+          }
         });
 
       // trigger nodes-moves and purge inserted ones
