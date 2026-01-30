@@ -276,7 +276,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeParent(nodesRefToMove[0]!, keyNewParent);
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
-            console.log(nodesRef.value)
+            console.log(nodesRef.v)
             computeIndexKeys();
             if (emitNodesMoveData.positionStartInParent === -1) {
               emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
@@ -295,6 +295,9 @@ function useSortable(el: Ref<HTMLElement | null>) {
           emitNodesMoveData.positionStartInParent,
         );
       }
+
+      // uniquiz nodesRef, a bit consuming but works
+      uniquizNodes()
 
       // re-adjust fake rows
       if (movingMode === "child-to-previous") {
@@ -481,6 +484,15 @@ function computeIndexKeys() {
     const nodeKey = getNodeKeyValue(node);
     indexKeys.set(nodeKey, nodeIndex);
   });
+}
+function uniquizNodes() {
+  console.time('yoo')
+  nodesRef.value = nodesRef.value.filter((nodeFilter, nodeIndex, nodeArray) => {
+    return nodeArray.map((nodeMap) => {
+      return getNodeKeyValue(nodeMap)
+    }).indexOf(getNodeKeyValue(nodeFilter)) === nodeIndex
+  })
+  console.timeEnd('yoo')
 }
 function setupElementsKeys(nodes: T[]) {
   if (!treeBodyEl.value) {
