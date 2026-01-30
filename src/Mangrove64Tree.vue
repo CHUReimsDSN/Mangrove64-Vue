@@ -47,7 +47,6 @@ const propsComponent = withDefaults(defineProps<TMangrove64TreeProps<T>>(), {
 });
 
 // emits
-
 const emitsComponent = defineEmits<TMangrove64Emits<T>>();
 
 // slots
@@ -164,10 +163,13 @@ function useSortable(el: Ref<HTMLElement | null>) {
           const parentNodeIndex = indexKeys.get(targetNodeKey)
           if (parentNodeIndex) {
             const parentNode = nodesRef.value[parentNodeIndex]!
+            console.log('1')
             await onNodeExpandToggle(parentNode, true)
+            console.log('4')
           }
         }
       }
+      console.log('5')
 
       // update moving nodes hierarchy and levels
       const emitNodesMoveData = {
@@ -284,12 +286,14 @@ function useSortable(el: Ref<HTMLElement | null>) {
 
       // trigger nodes-moves and purge inserted ones
       if (emitNodesMoveData.nodesToMove.length > 0) {
+        console.log('8')
         await emitsComponent(
           "nodes-move",
           emitNodesMoveData.nodesToMove,
           emitNodesMoveData.keyNewParent,
           emitNodesMoveData.positionStartInParent,
         );
+        console.log('9')
       }
 
       // re-adjust fake rows
@@ -617,6 +621,7 @@ async function lazyLoad(node: T) {
     setNodeChildren(node, allChildrenNode);
     nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
     computeIndexKeys();
+    console.log('3.2')
     void nextTick(() => {
       setupElementsKeys(allChildrenNode);
       if (selectedKeys.value.has(nodeKey)) {
@@ -626,11 +631,13 @@ async function lazyLoad(node: T) {
       loadingKeys.value.delete(nodeKey);
     });
   };
+  console.log('3.1')
   await emitsComponent("lazy-load-children", {
     node: node,
     nodeKey: nodeKey,
     done: doneCallback,
   });
+  console.log('3.3')
 }
 async function onNodeExpandToggle(node: T, state: boolean) {
   if (state) {
@@ -646,6 +653,7 @@ async function onNodeExpandToggle(node: T, state: boolean) {
       }
       setChildrenHideState(hierarchy, false, false);
     } else {
+      console.log('3')
       await lazyLoad(node)
     }
   } else {

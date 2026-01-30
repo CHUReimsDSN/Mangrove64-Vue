@@ -2042,9 +2042,10 @@ const Me = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
             const I = c.get(z);
             if (I) {
               const Z = h.value[I];
-              await wt(Z, !0);
+              console.log("1"), await wt(Z, !0), console.log("4");
             }
           }
+          console.log("5");
           const be = {
             nodesToMove: [],
             keyNewParent: null,
@@ -2106,12 +2107,12 @@ const Me = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
               }
               Jn(rt[0], ie), eo(rt[0], Ne), h.value.splice(go + 1, 0, ...rt), ve(), be.positionStartInParent === -1 && (be.positionStartInParent = w.value ? Ne + 2 : Ne + 1), be.keyNewParent = ie, be.nodesToMove.push(rt[0]);
             }
-          }), be.nodesToMove.length > 0 && await r(
+          }), be.nodesToMove.length > 0 && (console.log("8"), await r(
             "nodes-move",
             be.nodesToMove,
             be.keyNewParent,
             be.positionStartInParent
-          ), R === "child-to-previous") {
+          ), console.log("9")), R === "child-to-previous") {
             const I = l.get(
               nt(z)
             );
@@ -2286,32 +2287,34 @@ const Me = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
     }
     async function Fe(u) {
       const f = L(u);
-      $.value.add(f), await r("lazy-load-children", {
+      $.value.add(f);
+      const g = (C) => {
+        const Q = c.get(f);
+        if (Q === void 0)
+          return;
+        const N = s.get(f);
+        s.set(f, {
+          parent: (N == null ? void 0 : N.parent) ?? qe,
+          children: C.sort((z, he) => ot(he) - ot(z)).map((z) => L(z))
+        });
+        const O = y.value.get(f) ?? 0;
+        C.forEach((z) => {
+          const he = L(z);
+          s.set(he, {
+            parent: f,
+            children: []
+          }), y.value.set(he, O + 1);
+        });
+        const R = [...St(u), ...C].filter((z, he, be) => be.map((Le) => L(Le)).indexOf(L(z)) === he);
+        pn(u, R), h.value.splice(Q + 1, 0, ...R), ve(), console.log("3.2"), Dt(() => {
+          se(R), v.value.has(f) && (q(f, !0), Ge(f, !0)), $.value.delete(f);
+        });
+      };
+      console.log("3.1"), await r("lazy-load-children", {
         node: u,
         nodeKey: f,
-        done: (C) => {
-          const Q = c.get(f);
-          if (Q === void 0)
-            return;
-          const N = s.get(f);
-          s.set(f, {
-            parent: (N == null ? void 0 : N.parent) ?? qe,
-            children: C.sort((z, he) => ot(he) - ot(z)).map((z) => L(z))
-          });
-          const O = y.value.get(f) ?? 0;
-          C.forEach((z) => {
-            const he = L(z);
-            s.set(he, {
-              parent: f,
-              children: []
-            }), y.value.set(he, O + 1);
-          });
-          const R = [...St(u), ...C].filter((z, he, be) => be.map((Le) => L(Le)).indexOf(L(z)) === he);
-          pn(u, R), h.value.splice(Q + 1, 0, ...R), ve(), Dt(() => {
-            se(R), v.value.has(f) && (q(f, !0), Ge(f, !0)), $.value.delete(f);
-          });
-        }
-      });
+        done: g
+      }), console.log("3.3");
     }
     async function wt(u, f) {
       if (f) {
@@ -2323,7 +2326,7 @@ const Me = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
             return;
           Et(g, !1, !1);
         } else
-          await Fe(u);
+          console.log("3"), await Fe(u);
       } else {
         m.value.delete(L(u)), r("node-collapse", u);
         const g = gn(u);
