@@ -490,6 +490,7 @@ function computeIndexKeys() {
 }
 function uniquizNodes() {
   nodesRef.value = nodesRef.value.filter((nodeFilter, nodeIndex, nodeArray) => {
+    console.log(nodeFilter)
     return nodeArray.map((nodeMap) => {
       return getNodeKeyValue(nodeMap)
     }).indexOf(getNodeKeyValue(nodeFilter)) === nodeIndex

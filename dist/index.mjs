@@ -2209,7 +2209,7 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
       });
     }
     function be() {
-      h.value = h.value.filter((u, f, g) => g.map((C) => R(C)).indexOf(R(u)) === f);
+      h.value = h.value.filter((u, f, g) => (console.log(u), g.map((C) => R(C)).indexOf(R(u)) === f));
     }
     function pe(u) {
       if (!V.value)
