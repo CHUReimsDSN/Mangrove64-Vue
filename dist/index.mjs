@@ -2124,7 +2124,7 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
             be(), l.clear(), pe(h.value), le.stop(), le.start(), v.value.forEach((I) => {
               Y(I, !0);
             });
-          }, 0);
+          }, 1e3);
         },
         onSelect: (A) => {
           const O = A.item.getAttribute(Oe);
