@@ -296,9 +296,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
         );
       }
 
-      // uniquiz nodesRef, a bit consuming but works
-      uniquizNodes()
-
       // re-adjust fake rows
       if (movingMode === "child-to-previous") {
         const targetElementFake = elementKeys.get(
@@ -323,6 +320,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
+        uniquizNodes()
       });
     },
     onSelect: (event) => {
