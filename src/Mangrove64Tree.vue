@@ -177,7 +177,111 @@ function useSortable(el: Ref<HTMLElement | null>) {
         positionStartInParent: -1
       }
       let hasResetParentChildren = false;
+      [...selectedKeys.value]
+        .sort((selectedA, selectedB) => {
+          return (
+            (indexKeys.get(selectedA) ?? 0) - (indexKeys.get(selectedB) ?? 0)
+          );
+        })
+        .forEach((movingNodeKey) => {
+          const hierarchyMovingNode = hierarchiKeys.get(movingNodeKey);
+          if (!hierarchyMovingNode) {
+            return;
+          }
 
+          if (selectedKeys.value.has(hierarchyMovingNode.parent)) {
+            const levelMovingParent =
+              levelKeys.value.get(hierarchyMovingNode.parent) ?? -1;
+            levelKeys.value.set(movingNodeKey, levelMovingParent + 1);
+            return;
+          }
+
+          const oldParentHierarchy = hierarchiKeys.get(
+            hierarchyMovingNode.parent
+          );
+          if (oldParentHierarchy) {
+            oldParentHierarchy.children = oldParentHierarchy.children.filter(
+              (childFilter) => {
+                return childFilter !== movingNodeKey;
+              }
+            );
+          }
+
+          let newPositionInParent = -1;
+
+          if (movingMode === "brother-to-previous") {
+            hierarchyMovingNode.parent = targetHierarchy.parent;
+            const targetParentHierarchy = hierarchiKeys.get(
+              targetHierarchy.parent
+            );
+            if (targetParentHierarchy) {
+              newPositionInParent = targetParentHierarchy.children.findIndex(
+                (childFindIndex) => {
+                  return childFindIndex === targetNodeKey;
+                }
+              );
+              if (newPositionInParent !== -1) {
+                newPositionInParent += 1;
+              }
+              targetParentHierarchy.children.splice(
+                newPositionInParent,
+                0,
+                movingNodeKey
+              );
+            }
+          } else if (movingMode === "child-to-previous") {
+            hierarchyMovingNode.parent = targetNodeKey;
+            const targetHierarchy = hierarchiKeys.get(targetNodeKey);
+            if (targetHierarchy) {
+              targetHierarchy.children.unshift(movingNodeKey);
+            }
+          }
+
+          // nodesref update
+          // if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
+          //   const keyNewParent =
+          //     hierarchyMovingNode.parent === rootHierarchyKey
+          //       ? null
+          //       : hierarchyMovingNode.parent;
+          //   const recursiveChildrenCount = getRecursiveChildrenCount(
+          //     movingNodeKey,
+          //     0
+          //   );
+          //   const nodeRefOldIndex = indexKeys.get(movingNodeKey) ?? 0;
+          //   const nodesRefToMove = nodesRef.value.splice(
+          //     nodeRefOldIndex,
+          //     recursiveChildrenCount + 1
+          //   );
+          //   computeIndexKeys();
+          //   const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
+          //   if (keyNewParent !== null) {
+          //     const parentNodeIndex = indexKeys.get(keyNewParent);
+          //     if (parentNodeIndex !== undefined) {
+          //       const parentNode = nodesRef.value[parentNodeIndex]!;
+          //       let parentChildren: T[] = [];
+          //       if (!hasResetParentChildren) {
+          //         parentChildren = [];
+          //         hasResetParentChildren = true;
+          //       } else {
+          //         parentChildren = parentChildren.concat(
+          //           getNodeChildren(parentNode)
+          //         );
+          //       }
+          //       parentChildren.push(nodesRefToMove[0]!);
+          //       setNodeChildren(parentNode, parentChildren);
+          //     }
+          //   }
+          //   setNodeParent(nodesRefToMove[0]!, keyNewParent);
+          //   setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
+          //   nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
+          //   computeIndexKeys();
+          //   if (emitNodesMoveData.positionStartInParent === -1) {
+          //     emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
+          //   }
+          //   emitNodesMoveData.keyNewParent = keyNewParent
+          //   emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
+          // }
+        });
 
       // trigger nodes-moves and purge inserted ones
       if (emitNodesMoveData.nodesToMove.length > 0) {
