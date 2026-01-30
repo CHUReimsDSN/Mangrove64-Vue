@@ -352,6 +352,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
       if (nodeAttribute.includes(fakeElementPrefix)) {
         return false;
       }
+            console.time('move')
+
       willInsertAfter.value = event.willInsertAfter ?? false
 
       const targetAttribute = willInsertAfter.value
@@ -400,6 +402,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
             levelKeys.value.set(movingNodeKey, levelTargetKey + 1);
           }
         });
+
+        console.timeEnd('move')
     },
   };
 

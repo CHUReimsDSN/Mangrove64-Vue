@@ -2145,7 +2145,7 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
           const O = A.dragged.getAttribute(Oe);
           if (!O || !v.value.has(ge(O)) || O.includes(He))
             return !1;
-          w.value = A.willInsertAfter ?? !1;
+          console.time("move"), w.value = A.willInsertAfter ?? !1;
           const B = w.value ? A.related.getAttribute(Oe) : (Fe = A.related.previousElementSibling) == null ? void 0 : Fe.getAttribute(Oe);
           if (!B)
             return !1;
@@ -2160,7 +2160,7 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
               return;
             const We = y.value.get(de) ?? 0;
             z === "brother-to-previous" ? y.value.set(I, We) : z === "child-to-previous" && y.value.set(I, We + 1);
-          });
+          }), console.timeEnd("move");
         }
       };
       return {
