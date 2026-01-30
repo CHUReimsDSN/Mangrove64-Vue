@@ -795,7 +795,7 @@ function isNodeExpanded(node: T) {
 }
 function isNodeSelected(node: T) {
   const nodeKey = getNodeKeyValue(node);
-  console.log('slflsdflsdfl')
+  console.log(getNodeKeyValue(node))
   return selectedKeys.value.has(nodeKey);
 }
 function isNodeLoading(node: T) {
