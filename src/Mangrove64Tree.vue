@@ -157,20 +157,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
         return;
       }
 
-      // expand node if child
-      if (movingMode === 'child-to-previous') {
-        if (!expandedKeys.value.has(targetNodeKey)) {
-          const parentNodeIndex = indexKeys.get(targetNodeKey)
-          if (parentNodeIndex) {
-            const parentNode = nodesRef.value[parentNodeIndex]!
-            console.log('1')
-            await onNodeExpandToggle(parentNode, true)
-            console.log('4')
-          }
-        }
-      }
-      console.log('5')
-
       // update moving nodes hierarchy and levels
       const emitNodesMoveData = {
         nodesToMove: <T[]>[],
@@ -178,122 +164,16 @@ function useSortable(el: Ref<HTMLElement | null>) {
         positionStartInParent: -1
       }
       let hasResetParentChildren = false;
-      [...selectedKeys.value]
-        .sort((selectedA, selectedB) => {
-          return (
-            (indexKeys.get(selectedA) ?? 0) - (indexKeys.get(selectedB) ?? 0)
-          );
-        })
-        .forEach((movingNodeKey) => {
-          const hierarchyMovingNode = hierarchiKeys.get(movingNodeKey);
-          if (!hierarchyMovingNode) {
-            return;
-          }
 
-          if (selectedKeys.value.has(hierarchyMovingNode.parent)) {
-            const levelMovingParent =
-              levelKeys.value.get(hierarchyMovingNode.parent) ?? -1;
-            levelKeys.value.set(movingNodeKey, levelMovingParent + 1);
-            return;
-          }
-
-          const oldParentHierarchy = hierarchiKeys.get(
-            hierarchyMovingNode.parent
-          );
-          if (oldParentHierarchy) {
-            oldParentHierarchy.children = oldParentHierarchy.children.filter(
-              (childFilter) => {
-                return childFilter !== movingNodeKey;
-              }
-            );
-          }
-
-          let newPositionInParent = -1;
-
-          if (movingMode === "brother-to-previous") {
-            hierarchyMovingNode.parent = targetHierarchy.parent;
-            const targetParentHierarchy = hierarchiKeys.get(
-              targetHierarchy.parent
-            );
-            if (targetParentHierarchy) {
-              newPositionInParent = targetParentHierarchy.children.findIndex(
-                (childFindIndex) => {
-                  return childFindIndex === targetNodeKey;
-                }
-              );
-              if (newPositionInParent !== -1) {
-                newPositionInParent += 1;
-              }
-              targetParentHierarchy.children.splice(
-                newPositionInParent,
-                0,
-                movingNodeKey
-              );
-            }
-          } else if (movingMode === "child-to-previous") {
-            hierarchyMovingNode.parent = targetNodeKey;
-            const targetHierarchy = hierarchiKeys.get(targetNodeKey);
-            if (targetHierarchy) {
-              targetHierarchy.children.unshift(movingNodeKey);
-            }
-          }
-
-          // nodesref update
-          if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
-            const keyNewParent =
-              hierarchyMovingNode.parent === rootHierarchyKey
-                ? null
-                : hierarchyMovingNode.parent;
-            const recursiveChildrenCount = getRecursiveChildrenCount(
-              movingNodeKey,
-              0
-            );
-            const nodeRefOldIndex = indexKeys.get(movingNodeKey) ?? 0;
-            const nodesRefToMove = nodesRef.value.splice(
-              nodeRefOldIndex,
-              recursiveChildrenCount + 1
-            );
-            computeIndexKeys();
-            const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
-            if (keyNewParent !== null) {
-              const parentNodeIndex = indexKeys.get(keyNewParent);
-              if (parentNodeIndex !== undefined) {
-                const parentNode = nodesRef.value[parentNodeIndex]!;
-                let parentChildren: T[] = [];
-                if (!hasResetParentChildren) {
-                  parentChildren = [];
-                  hasResetParentChildren = true;
-                } else {
-                  parentChildren = parentChildren.concat(
-                    getNodeChildren(parentNode)
-                  );
-                }
-                parentChildren.push(nodesRefToMove[0]!);
-                setNodeChildren(parentNode, parentChildren);
-              }
-            }
-            setNodeParent(nodesRefToMove[0]!, keyNewParent);
-            setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
-            nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
-            computeIndexKeys();
-            if (emitNodesMoveData.positionStartInParent === -1) {
-              emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
-            }
-            emitNodesMoveData.keyNewParent = keyNewParent
-            emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
-          }
-        });
 
       // trigger nodes-moves and purge inserted ones
       if (emitNodesMoveData.nodesToMove.length > 0) {
-        console.log('8')
         await emitsComponent(
           "nodes-move",
           emitNodesMoveData.nodesToMove,
           emitNodesMoveData.keyNewParent,
           emitNodesMoveData.positionStartInParent,
         );
-        console.log('9')
       }
 
       // re-adjust fake rows
@@ -621,7 +501,6 @@ async function lazyLoad(node: T) {
     setNodeChildren(node, allChildrenNode);
     nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
     computeIndexKeys();
-    console.log('3.2')
     void nextTick(() => {
       setupElementsKeys(allChildrenNode);
       if (selectedKeys.value.has(nodeKey)) {
@@ -631,13 +510,11 @@ async function lazyLoad(node: T) {
       loadingKeys.value.delete(nodeKey);
     });
   };
-  console.log('3.1')
   await emitsComponent("lazy-load-children", {
     node: node,
     nodeKey: nodeKey,
     done: doneCallback,
   });
-  console.log('3.3')
 }
 async function onNodeExpandToggle(node: T, state: boolean) {
   if (state) {
@@ -653,7 +530,6 @@ async function onNodeExpandToggle(node: T, state: boolean) {
       }
       setChildrenHideState(hierarchy, false, false);
     } else {
-      console.log('3')
       await lazyLoad(node)
     }
   } else {
