@@ -143,7 +143,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
         return;
       }
 
-      console.time('end')
       // determine mode
       const movingMode: "child-to-previous" | "brother-to-previous" =
         moveEventTargetAttribute.includes(fakeElementPrefix)
@@ -313,7 +312,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
       isDragging.value = false;
       moveEventTargetAttribute = null;
       rerenderTrick.value++;
-      void nextTick(() => {
+      setTimeout(() => {
+        uniquizNodes();
         elementKeys.clear();
         setupElementsKeys(nodesRef.value);
         hook.stop();
@@ -321,11 +321,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
-        setTimeout(() => {
-          uniquizNodes();
-        }, 0)
-      });
-      console.timeEnd('end')
+      }, 0)
     },
     onSelect: (event) => {
       const nodeKey = event.item.getAttribute(dataKeyAttribute);
@@ -490,11 +486,14 @@ function computeIndexKeys() {
   });
 }
 function uniquizNodes() {
+  console.time('uniquiz')
   nodesRef.value = nodesRef.value.filter((nodeFilter, nodeIndex, nodeArray) => {
     return nodeArray.map((nodeMap) => {
       return getNodeKeyValue(nodeMap)
     }).indexOf(getNodeKeyValue(nodeFilter)) === nodeIndex
   })
+  // computeIndexKeys();
+  console.timeEnd('uniquiz')
 }
 function setupElementsKeys(nodes: T[]) {
   if (!treeBodyEl.value) {
