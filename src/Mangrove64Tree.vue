@@ -321,8 +321,10 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
-                    uniquizNodes();
-            console.log(nodesRef.value)
+        setTimeout(() => {
+          uniquizNodes();
+          console.log(nodesRef.value)
+        }, 200)
       });
       console.timeEnd('end')
     },
