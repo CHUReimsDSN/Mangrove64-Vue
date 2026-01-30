@@ -276,6 +276,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeParent(nodesRefToMove[0]!, keyNewParent);
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
+            console.log(nodesRef.value)
             computeIndexKeys();
             if (emitNodesMoveData.positionStartInParent === -1) {
               emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1

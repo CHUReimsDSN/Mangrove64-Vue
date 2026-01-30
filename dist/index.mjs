@@ -2106,7 +2106,7 @@ const Me = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
                   ) : (it = [], Le = !0), it.push(rt[0]), pn(Sn, it);
                 }
               }
-              to(rt[0], ie), no(rt[0], Ne), h.value.splice(En + 1, 0, ...rt), ve(), be.positionStartInParent === -1 && (be.positionStartInParent = w.value ? Ne + 2 : Ne + 1), be.keyNewParent = ie, be.nodesToMove.push(rt[0]);
+              to(rt[0], ie), no(rt[0], Ne), h.value.splice(En + 1, 0, ...rt), console.log(h.value), ve(), be.positionStartInParent === -1 && (be.positionStartInParent = w.value ? Ne + 2 : Ne + 1), be.keyNewParent = ie, be.nodesToMove.push(rt[0]);
             }
           }), be.nodesToMove.length > 0 && await r(
             "nodes-move",
