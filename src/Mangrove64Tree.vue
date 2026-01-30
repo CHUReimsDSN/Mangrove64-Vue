@@ -143,6 +143,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         return;
       }
 
+      console.time('end')
       // determine mode
       const movingMode: "child-to-previous" | "brother-to-previous" =
         moveEventTargetAttribute.includes(fakeElementPrefix)
@@ -277,6 +278,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeParent(nodesRefToMove[0]!, keyNewParent);
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent)
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
+            uniquizNodes();
+            console.log(nodesRef.value)
             computeIndexKeys();
             if (emitNodesMoveData.positionStartInParent === -1) {
               emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
@@ -320,9 +323,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
-              uniquizNodes();
-      console.log(nodesRef.value)
       });
+      console.timeEnd('end')
     },
     onSelect: (event) => {
       const nodeKey = event.item.getAttribute(dataKeyAttribute);
