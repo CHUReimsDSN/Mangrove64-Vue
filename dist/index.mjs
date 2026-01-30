@@ -2120,10 +2120,10 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
               Z.removeChild(I), Z.insertBefore(I, A.item);
             }
           }
-          N.value = !1, i = null, be(), console.log(h.value), K.value++, _t(() => {
+          N.value = !1, i = null, K.value++, _t(() => {
             l.clear(), pe(h.value), le.stop(), le.start(), v.value.forEach((I) => {
               Y(I, !0);
-            });
+            }), be(), console.log(h.value);
           });
         },
         onSelect: (A) => {

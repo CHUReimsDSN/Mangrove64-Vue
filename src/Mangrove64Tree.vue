@@ -311,8 +311,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
       // end
       isDragging.value = false;
       moveEventTargetAttribute = null;
-      uniquizNodes();
-      console.log(nodesRef.value)
       rerenderTrick.value++;
       void nextTick(() => {
         elementKeys.clear();
@@ -322,6 +320,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
+              uniquizNodes();
+      console.log(nodesRef.value)
       });
     },
     onSelect: (event) => {
