@@ -1,9 +1,8 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts">
 import {
   computed,
   onMounted,
   ref,
-  watch,
   nextTick,
   onScopeDispose,
   useSlots,
@@ -16,19 +15,21 @@ import TreeTableFakeRow from "./components/TreeTableFakeRow.vue";
 import Sortable, { MultiDrag, type Options } from "sortablejs";
 import type {
   TMangrove64TreeProps,
-  TMangrove64TreeColumn,
   TMangrove64TreeApi,
   TMangrove64Emits,
+  TNodeItem,
+  TNodeItemData,
 } from "./models";
 import type {
   TTreeTableHierarchy,
-  TTreeTableNodeKey,
+  TTreeTableNodeKeyValue,
   TTreeTableSlot,
   TTreeTableTheme,
 } from "./private-models";
+import { NodeItemApi } from "./node-item";
 
 // props
-const propsComponent = withDefaults(defineProps<TMangrove64TreeProps<T>>(), {
+const propsComponent = withDefaults(defineProps<TMangrove64TreeProps>(), {
   draggable: false,
   nodeKey: "id" as keyof T,
   childrenKey: "children" as keyof T,
@@ -47,10 +48,10 @@ const propsComponent = withDefaults(defineProps<TMangrove64TreeProps<T>>(), {
 });
 
 // emits
-const emitsComponent = defineEmits<TMangrove64Emits<T>>();
+const emitsComponent = defineEmits<TMangrove64Emits>();
 
 // slots
-defineSlots<Record<string, TTreeTableSlot<T>>>();
+defineSlots<Record<string, TTreeTableSlot>>();
 
 // vars
 let moveEventTargetAttribute: string | null = null;
@@ -60,21 +61,10 @@ const dataKeyAttribute = "data-key" as const;
 const fakeElementPrefix = "__mangrove64-fake-row-" as const;
 const rootHierarchyKey = "__mangrove64-null-hierarchy-key" as const;
 const slots = useSlots();
-const elementKeys: Map<TTreeTableNodeKey, HTMLElement> = new Map();
-const hierarchiKeys: Map<TTreeTableNodeKey, TTreeTableHierarchy> = new Map();
-const indexKeys: Map<TTreeTableNodeKey, number> = new Map();
+const elementKeys: Map<TTreeTableNodeKeyValue, HTMLElement> = new Map();
 
 // refs
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-const nodesRef = ref<T[]>([]) as Ref<T[]>;
-const columnsRef = ref<TMangrove64TreeColumn<T>[]>(
-  propsComponent.columns
-) as Ref<TMangrove64TreeColumn<T>[]>;
-const expandedKeys = ref<Set<TTreeTableNodeKey>>(new Set());
-const selectedKeys = ref<Set<TTreeTableNodeKey>>(new Set());
-const levelKeys = ref<Map<TTreeTableNodeKey, number>>(new Map());
-const hiddenKeys = ref<Set<TTreeTableNodeKey>>(new Set());
-const loadingKeys = ref<Set<TTreeTableNodeKey>>(new Set());
+const nodeItems = ref<TNodeItem[]>([])
 const treeBodyEl = ref<HTMLElement | null>(null);
 const isReady = ref(false);
 const isDragging = ref(false);
@@ -87,33 +77,57 @@ const hook = useSortable(treeBodyEl);
 
 // functions
 function init() {
-  hierarchiKeys.set(rootHierarchyKey, {
-    parent: rootHierarchyKey + "-unknown",
-    children: [],
-  });
-
-  nodesRef.value = computedAllNodes(
+  nodeItems.value = computedAllNodeItems(
     propsComponent.nodes,
     0,
     rootHierarchyKey,
     []
-  )[0];
-
-  if (propsComponent.expandeAllNodeAtStart) {
-    nodesRef.value.forEach((node) => {
-      expandedKeys.value.add(getNodeKeyValue(node as unknown as T));
-    });
-  } else {
-    propsComponent.expandedNodeAtStart?.forEach((expandedNode) => {
-      expandedKeys.value.add(expandedNode);
-    });
-  }
-
-  propsComponent.selectedNodeAtStart?.forEach((selectedNode) => {
-    setSelectedKeys(selectedNode, true);
-  });
-
+  )[0]
   hook.start();
+}
+function computedAllNodeItems(
+  nodes: TNodeItemData[],
+  level: number,
+  parent: TTreeTableHierarchy["parent"],
+  accumulator: TNodeItem[]
+): [TNodeItem[], TTreeTableNodeKeyValue[]] {
+  const nodeKeyValues: TTreeTableNodeKeyValue[] = [];
+  nodes.forEach((node) => {
+    const keyValue = node[propsComponent.nodeKey] as TTreeTableNodeKeyValue;
+    const nodeItem: TNodeItem = {
+      dataIdentifierValue: keyValue,
+      dataIdentifierKey: propsComponent.nodeKey,
+      dataHasChildrenKey: propsComponent.hasChildrenKey,
+      dataOrderKey: propsComponent.orderKey,
+      parentKey: propsComponent.parentKey,
+      hierarchy: {
+        parent,
+        children: []
+      },
+      index: 0,
+      expanded: false,
+      selected: false,
+      level: 0,
+      hidden: false,
+      loading: false,
+      data: node
+    }
+    accumulator.push(nodeItem)
+    nodeItem.index = accumulator.length - 1
+    const childrens = (node[propsComponent.childrenKey] as TNodeItemData[]) ?? [];
+    const computedChild = computedAllNodeItems(
+      childrens,
+      level + 1,
+      keyValue,
+      accumulator
+    )
+    nodeItem.hierarchy.children = computedChild[1]
+    accumulator = computedChild[0];
+  })
+  accumulator.sort((nodeA, nodeB) => {
+    return NodeItemApi.getNodeOrder(nodeB) - NodeItemApi.getNodeOrder(nodeA);
+  });
+  return [accumulator, nodeKeyValues];
 }
 function useSortable(el: Ref<HTMLElement | null>) {
   let sortable: Sortable | undefined;
@@ -171,7 +185,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
       // update moving nodes hierarchy and levels
       const emitNodesMoveData = {
         nodesToMove: <T[]>[],
-        keyNewParent: <TTreeTableNodeKey | null>null,
+        keyNewParent: <TTreeTableNodeKeyValue | null>null,
         positionStartInParent: -1
       }
       let hasResetParentChildren = false;
@@ -430,7 +444,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
   };
 }
 function getRecursiveChildrenCount(
-  nodeKey: TTreeTableNodeKey,
+  nodeKey: TTreeTableNodeKeyValue,
   accumulator: number
 ) {
   const hierarchyNode = hierarchiKeys.get(nodeKey);
@@ -443,40 +457,7 @@ function getRecursiveChildrenCount(
   });
   return accumulator;
 }
-function computedAllNodes(
-  nodes: T[],
-  level: number,
-  parent: TTreeTableHierarchy["parent"],
-  accumulator: T[]
-): [T[], TTreeTableNodeKey[]] {
-  const nodeKeys: TTreeTableNodeKey[] = [];
-  nodes
-    .sort((nodeA, nodeB) => {
-      return getNodeOrder(nodeB) - getNodeOrder(nodeA);
-    })
-    .forEach((node) => {
-      const nodeKey = getNodeKeyValue(node);
-      accumulator.push(node);
-      indexKeys.set(nodeKey, accumulator.length - 1);
-      const results = computedAllNodes(
-        getNodeChildren(node),
-        level + 1,
-        nodeKey,
-        accumulator
-      );
-      hierarchiKeys.set(nodeKey, {
-        parent: parent,
-        children: results[1],
-      });
-      const parentHierarchy = hierarchiKeys.get(parent);
-      if (parentHierarchy) {
-        parentHierarchy.children.push(nodeKey);
-      }
-      levelKeys.value.set(nodeKey, level);
-      accumulator = results[0];
-    });
-  return [accumulator, nodeKeys];
-}
+
 function computeIndexKeys() {
   indexKeys.clear();
   nodesRef.value.forEach((node, nodeIndex) => {
@@ -484,47 +465,40 @@ function computeIndexKeys() {
     indexKeys.set(nodeKey, nodeIndex);
   });
 }
-function uniquizNodes() {
-  nodesRef.value = nodesRef.value.filter((nodeFilter, nodeIndex, nodeArray) => {
-    return nodeArray.map((nodeMap) => {
-      return getNodeKeyValue(nodeMap)
-    }).indexOf(getNodeKeyValue(nodeFilter)) === nodeIndex
-  })
-}
-function setupElementsKeys(nodes: T[]) {
+function setupElementsKeys(nodeItems: TNodeItem[]) {
   if (!treeBodyEl.value) {
     return;
   }
   const allRowElement = [
     ...treeBodyEl.value.querySelectorAll(".mangrove64-row"),
   ];
-  nodes.forEach((node) => {
-    const nodeKey = getNodeKeyValue(node);
+  nodeItems.forEach((node) => {
+    const nodeKeyValue = NodeItemApi.getDataKeyValue(node)
     const rowElement = allRowElement.find((rowElementFind) => {
       const attribute = rowElementFind.getAttribute(dataKeyAttribute);
-      return castAttributeToNodeKeyType(attribute) === nodeKey;
+      return castAttributeToNodeKeyType(attribute) === nodeKeyValue;
     });
     if (!rowElement) {
       return;
     }
-    elementKeys.set(nodeKey, rowElement as HTMLElement);
+    elementKeys.set(nodeKeyValue, rowElement as HTMLElement);
 
     const fakeRowElement = allRowElement.find((rowElementFind) => {
       const attribute = rowElementFind.getAttribute(dataKeyAttribute);
-      return attribute?.toString() === getElementFakeNodeKey(nodeKey);
+      return attribute?.toString() === getElementFakeNodeKey(nodeKeyValue);
     });
     if (!fakeRowElement) {
       return;
     }
     elementKeys.set(
-      getElementFakeNodeKey(nodeKey),
+      getElementFakeNodeKey(nodeKeyValue),
       fakeRowElement as HTMLElement
     );
   });
 }
 function castAttributeToNodeKeyType(
   attribute: string | null
-): TTreeTableNodeKey {
+): TTreeTableNodeKeyValue {
   switch (propsComponent.nodeKeyType) {
     case "string":
       return attribute ?? String();
@@ -534,7 +508,7 @@ function castAttributeToNodeKeyType(
       return Number(attribute);
   }
 }
-function setSelectedKeys(nodeKey: TTreeTableNodeKey, state: boolean) {
+function setSelectedKeys(nodeKey: TTreeTableNodeKeyValue, state: boolean) {
   if (state) {
     selectedKeys.value.add(nodeKey);
     const element = elementKeys.get(nodeKey);
@@ -640,7 +614,7 @@ async function lazyLoad(node: T) {
     });
   };
   await emitsComponent("lazy-load-children", {
-    node: node,
+    nodeItem: node,
     nodeKey: nodeKey,
     done: doneCallback,
   });
@@ -715,7 +689,7 @@ function onNodeCheckboxToggle(node: T, state: boolean) {
   }
   emitCallback();
 }
-function propagateSelectionDown(nodeKey: TTreeTableNodeKey, state: boolean) {
+function propagateSelectionDown(nodeKey: TTreeTableNodeKeyValue, state: boolean) {
   const hierarchy = hierarchiKeys.get(nodeKey);
   if (!hierarchy) {
     return;
@@ -725,7 +699,7 @@ function propagateSelectionDown(nodeKey: TTreeTableNodeKey, state: boolean) {
     propagateSelectionDown(childNodeKey, state);
   });
 }
-function propagateSelectionUp(nodeKey: TTreeTableNodeKey, state: boolean) {
+function propagateSelectionUp(nodeKey: TTreeTableNodeKeyValue, state: boolean) {
   const hierarchy = hierarchiKeys.get(nodeKey);
   if (!hierarchy) {
     return;
@@ -736,7 +710,7 @@ function propagateSelectionUp(nodeKey: TTreeTableNodeKey, state: boolean) {
   }
   propagateSelectionUp(hierarchy.parent, state);
 }
-function getElementFakeNodeKey(nodeKey: TTreeTableNodeKey) {
+function getElementFakeNodeKey(nodeKey: TTreeTableNodeKeyValue) {
   return `${fakeElementPrefix}${nodeKey.toString()}`;
 }
 function setNodeChildren(node: T, children: T[]) {
@@ -744,11 +718,11 @@ function setNodeChildren(node: T, children: T[]) {
     propsComponent.childrenKey as keyof T
   ] = children;
 }
-function setNodeParent(node: T, parent: TTreeTableNodeKey | null) {
+function setNodeParent(node: T, parent: TTreeTableNodeKeyValue | null) {
   if (!propsComponent.parentKey) {
     return;
   }
-  (node as { [K in keyof typeof node]: TTreeTableNodeKey | null })[
+  (node as { [K in keyof typeof node]: TTreeTableNodeKeyValue | null })[
     propsComponent.parentKey as keyof T
   ] = parent;
 }
@@ -767,47 +741,15 @@ function setNodeLeaf(node: T, state: boolean) {
   (node as { [K in keyof typeof node]: boolean })[propsComponent.hasChildrenKey as keyof T] = state
 }
 function getNodeParentKey(node: T) {
-  return (node[propsComponent.parentKey as keyof T]) as TTreeTableNodeKey | undefined;
+  return (node[propsComponent.parentKey as keyof T]) as TTreeTableNodeKeyValue | undefined;
 }
-function getNodeChildren(node: T) {
-  return (node[propsComponent.childrenKey as keyof T] ?? []) as T[];
-}
-function getNodeKeyValue(node: T) {
-  return node[propsComponent.nodeKey as keyof T] as TTreeTableNodeKey;
-}
+
 function getNodeHierarchy(node: T) {
   const nodeKey = getNodeKeyValue(node);
   return hierarchiKeys.get(nodeKey);
 }
-function getNodeLevel(node: T) {
-  const nodeKey = getNodeKeyValue(node);
-  return levelKeys.value.get(nodeKey) ?? 0;
-}
-function getNodeOrder(node: T) {
-  return (node[propsComponent.orderKey as keyof T] ?? 0) as number;
-}
-function isNodeLeaf(node: T) {
-  return Boolean(node[propsComponent.hasChildrenKey as keyof T]) === false;
-}
-function isNodeExpanded(node: T) {
-  const nodeKey = getNodeKeyValue(node);
-  return expandedKeys.value.has(nodeKey);
-}
-function isNodeSelected(node: T) {
-  const nodeKey = getNodeKeyValue(node);
-  console.log(getNodeKeyValue(node))
-  return selectedKeys.value.has(nodeKey);
-}
-function isNodeLoading(node: T) {
-  const nodeKey = getNodeKeyValue(node);
-  return loadingKeys.value.has(nodeKey);
-}
-function isNodeHidden(node: T) {
-  const nodeKey = getNodeKeyValue(node);
-  return hiddenKeys.value.has(nodeKey);
-}
-function getNodeByKey(nodeKey: TTreeTableNodeKey) {
-  return nodesRef.value.find((node) => {
+function getNodeItemByKey(nodeKey: TTreeTableNodeKeyValue) {
+  return nodeItems.value.find((node) => {
     return getNodeKeyValue(node) === nodeKey;
   });
 }
@@ -819,59 +761,66 @@ function updateNode(nodeData: T) {
   nodesRef.value[nodeIndex] = nodeData;
 }
 function addNode(
-  node: T,
+  nodeData: TNodeItemData,
 ) {
-  const nodeKey = getNodeKeyValue(node);
-  const parentNodeKey = getNodeParentKey(node) ?? '-1'
-  const parentHierarchy = hierarchiKeys.get(parentNodeKey);
-  if (parentHierarchy) {
-    parentHierarchy.children.push(nodeKey);
-  }
-  hierarchiKeys.set(nodeKey, {
-    parent: parentNodeKey,
-    children: [],
-  });
-  levelKeys.value.set(nodeKey, (levelKeys.value.get(parentNodeKey) ?? 0) + 1);
-  if (hiddenKeys.value.has(parentNodeKey)) {
-    hiddenKeys.value.add(nodeKey);
-  }
-  const parentNodeIndex = indexKeys.get(parentNodeKey);
-  const positionBelowParent = getNodeOrder(node)
-  if (parentNodeIndex === undefined) {
-    nodesRef.value.splice(positionBelowParent, 0, node);
-  } else {
-    nodesRef.value.splice(
-      parentNodeIndex + Math.abs(positionBelowParent),
-      0,
-      node
-    );
-  }
-  void nextTick(() => {
-    setupElementsKeys([node]);
+  const keyValue = nodeData[propsComponent.nodeKey] as TTreeTableNodeKeyValue
+  const parentKeyValue = nodeData[propsComponent.parentKey] as TTreeTableNodeKeyValue
+  const childrenKeyValue = ((nodeData[propsComponent.childrenKey] as TNodeItemData[]) ?? []).map((childMap) => {
+    return childMap[propsComponent.nodeKey] as TTreeTableNodeKeyValue
   })
-  computeIndexKeys();
-}
-function removeNode(nodeKey: TTreeTableNodeKey) {
-  const hierarchy = hierarchiKeys.get(nodeKey);
-  if (!hierarchy || hierarchy.children.length > 0) {
-    return;
+  const parentNodeItem = nodeItems.value.find((nodeItem) => {
+    return NodeItemApi.getDataKeyValue(nodeItem) === parentKeyValue
+  })
+  const nodeItem: TNodeItem = {
+    dataIdentifierValue: keyValue,
+    dataIdentifierKey: propsComponent.nodeKey,
+    dataHasChildrenKey: propsComponent.hasChildrenKey,
+    dataOrderKey: propsComponent.orderKey,
+    parentKey: propsComponent.parentKey,
+    hierarchy: {
+      parent: parentKeyValue,
+      children: childrenKeyValue
+    },
+    index: (parentNodeItem?.index ?? 0),
+    expanded: false,
+    selected: false,
+    level: (parentNodeItem?.level ?? 0) + 1,
+    hidden: false,
+    loading: false,
+    data: nodeData
   }
-  nodesRef.value = nodesRef.value.filter((nodeFilter) => {
-    return getNodeKeyValue(nodeFilter) !== nodeKey;
-  });
-  elementKeys.delete(nodeKey);
-  hierarchiKeys.delete(nodeKey);
-  expandedKeys.value.delete(nodeKey);
-  selectedKeys.value.delete(nodeKey);
-  levelKeys.value.delete(nodeKey);
-  hiddenKeys.value.delete(nodeKey);
-  computeIndexKeys();
+
+  void nextTick(() => {
+    setupElementsKeys([nodeItem]);
+  })
+}
+function removeNode(nodeKeyValue: TTreeTableNodeKeyValue) {
+  const indexesToRemove: number[] = []
+  nodeItems.value.forEach((nodeItem, nodeItemIndex) => {
+    const keyValue = NodeItemApi.getDataKeyValue(nodeItem)
+    if (nodeItem.hierarchy.parent === nodeKeyValue) {
+      nodeItem.hierarchy.parent = rootHierarchyKey
+    }
+    nodeItem.hierarchy.children = nodeItem.hierarchy.children.filter((childrenFilter) => {
+      return childrenFilter !== nodeKeyValue
+    })
+    if (keyValue === nodeKeyValue) {
+      indexesToRemove.push(nodeItemIndex)
+    }
+  })
+  indexesToRemove.forEach((index) => {
+    nodeItems.value.splice(index, 1)
+  })
 }
 function getSelectedKeys() {
-  return selectedKeys.value;
+  return nodeItems.value.filter((nodeItem) => {
+    return nodeItem.selected
+  })
 }
-function getExpandedKeys() {
-  return expandedKeys.value;
+function getExpandedNodeItem() {
+  return nodeItems.value.filter((nodeItem) => {
+    return nodeItem.expanded
+  })
 }
 function setupThemeMode() {
   if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -897,29 +846,21 @@ const slotMap = computed(() => {
 });
 
 // exposes
-defineExpose<TMangrove64TreeApi<T>>({
+defineExpose<TMangrove64TreeApi>({
   getSelectedKeys,
-  getExpandedKeys,
-  getNodeByKey,
+  getExpandedNodeItem,
+  getNodeItemByKey,
   updateNode,
   addNode,
   removeNode,
 });
-
-// watchs
-watch(
-  () => propsComponent.columns,
-  (newValue) => {
-    columnsRef.value = newValue;
-  }
-);
 
 // lifeCycle
 onMounted(() => {
   setupThemeMode();
   init();
   void nextTick(() => {
-    setupElementsKeys(nodesRef.value);
+    setupElementsKeys(nodeItems.value);
     isReady.value = true;
   });
 });
@@ -934,30 +875,24 @@ onScopeDispose(() => {
       <table class="mangrove64-table" :class="tableClass">
         <thead>
           <tr>
-            <template v-for="(col, i) in columnsRef" :key="col.name">
+            <template v-for="(col, i) in propsComponent.columns" :key="col.name">
               <TreeTableHeaderCell :column="col" :resizableColumns="propsComponent.resizableColumns" :index="i"
                 :borderStrategy="propsComponent.borderStrategy" :theme="themeMode" />
             </template>
           </tr>
         </thead>
         <tbody ref="treeBodyEl" :key="rerenderTrick">
-          <template v-for="node in nodesRef" :key="node[propsComponent.nodeKey as keyof T]">
-            <TreeTableRow :node="node" :columns="columns" :node-key="propsComponent.nodeKey as keyof T"
-              :children-key="propsComponent.childrenKey as keyof T"
-              :has-children-key="propsComponent.hasChildrenKey as keyof T" :disabled-key="propsComponent.disabledKey"
-              :selectionMode="propsComponent.selectionMode" :expanded="isNodeExpanded(node)"
-              :selected="isNodeSelected(node)" :isLoading="isNodeLoading(node)" :level="getNodeLevel(node)"
-              :hidden="isNodeHidden(node)" :indentationPx="propsComponent.indentationPx"
-              :row-css-class="propsComponent.rowCssClass" :cell-css-class="propsComponent.cellCssClass"
-              :border-strategy="propsComponent.borderStrategy" :slot-map="slotMap" :theme="themeMode"
-              :checkbox-color="propsComponent.checkboxColor" @node-expand-toggle="onNodeExpandToggle"
-              @node-checkbox-toggle="onNodeCheckboxToggle" @node-click="onNodeClick" />
-            <TreeTableFakeRow :node="node" :columns="columns" :node-key="propsComponent.nodeKey as keyof T"
-              :disabled-key="propsComponent.disabledKey" :expanded="isNodeExpanded(node)"
-              :selected="isNodeSelected(node)" :level="getNodeLevel(node)" :hidden="isNodeHidden(node)"
+          <template v-for="item in nodeItems" :key="item.dataIdentifierKey">
+            <TreeTableRow :item="item" :columns="propsComponent.columns" :selectionMode="propsComponent.selectionMode"
               :indentationPx="propsComponent.indentationPx" :row-css-class="propsComponent.rowCssClass"
               :cell-css-class="propsComponent.cellCssClass" :border-strategy="propsComponent.borderStrategy"
-              :is-dragging="isDragging" :theme="themeMode" @node-click="onNodeClick" />
+              :slot-map="slotMap" :theme="themeMode" :checkbox-color="propsComponent.checkboxColor"
+              @node-expand-toggle="onNodeExpandToggle" @node-checkbox-toggle="onNodeCheckboxToggle"
+              @node-click="onNodeClick" />
+            <TreeTableFakeRow :item="item" :columns="columns" :indentationPx="propsComponent.indentationPx"
+              :row-css-class="propsComponent.rowCssClass" :cell-css-class="propsComponent.cellCssClass"
+              :border-strategy="propsComponent.borderStrategy" :is-dragging="isDragging" :theme="themeMode"
+              @node-click="onNodeClick" />
           </template>
         </tbody>
       </table>

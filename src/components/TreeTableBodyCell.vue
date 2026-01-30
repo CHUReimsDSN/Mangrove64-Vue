@@ -1,6 +1,6 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts">
 import { computed } from "vue";
-import type { TMangrove64TreeColumn } from "../models";
+import type { TMangrove64TreeColumn, TNodeItem } from "../models";
 import type {
   TTreeTableBorderStrategy,
   TTreeTableSlot,
@@ -9,11 +9,11 @@ import type {
 // props
 const propsComponent = withDefaults(
   defineProps<{
-    node: T;
-    column: TMangrove64TreeColumn<T>;
+    item: TNodeItem;
+    column: TMangrove64TreeColumn;
     cellCssClass: string | undefined;
     borderStrategy: TTreeTableBorderStrategy;
-    slotRender: TTreeTableSlot<T> | undefined;
+    slotRender: TTreeTableSlot | undefined;
   }>(),
   {}
 );
@@ -21,10 +21,10 @@ const propsComponent = withDefaults(
 // computeds
 const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
-    return propsComponent.column.format(propsComponent.node);
+    return propsComponent.column.format(propsComponent.item);
   }
   if (propsComponent.column.fieldTarget) {
-    return propsComponent.node[propsComponent.column.fieldTarget];
+    return propsComponent.item.data[propsComponent.column.fieldTarget];
   }
 });
 const getcellCssClass = computed(() => {
@@ -52,7 +52,7 @@ const getcellCssClass = computed(() => {
   <td :class="getcellCssClass">
     <template v-if="propsComponent.slotRender">
       <component
-        :is="{ render: () => propsComponent.slotRender!({ node: propsComponent.node }) }"
+        :is="{ render: () => propsComponent.slotRender!({ nodeItem: propsComponent.item }) }"
       />
     </template>
     <div v-else class="mangrove64-cell-inner">

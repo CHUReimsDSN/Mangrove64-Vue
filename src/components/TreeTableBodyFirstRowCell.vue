@@ -1,61 +1,50 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { QIcon, QCheckbox, QSpinner } from 'quasar'
-import type { TMangrove64TreeColumn } from "../models";
+import type { TMangrove64TreeColumn, TNodeItem } from "../models";
 import type {
   TTreeTableBorderStrategy,
   TTreeTableSelectionMode,
   TTreeTableSlot,
 } from "../private-models";
+import { NodeItemApi } from "../node-item";
 // emits
 const emitsComponent = defineEmits<{
-  (e: "node-expand-toggle", node: T, state: boolean): void;
-  (e: "node-checkbox-toggle", node: T, state: boolean): void;
+  (e: "node-expand-toggle", nodeItem: TNodeItem, state: boolean): void;
+  (e: "node-checkbox-toggle", nodeItem: TNodeItem, state: boolean): void;
 }>();
 
 // props
 const propsComponent = withDefaults(
   defineProps<{
-    node: T;
-    column: TMangrove64TreeColumn<T>;
-    level: number;
+    item: TNodeItem;
+    column: TMangrove64TreeColumn;
     indentationPx: number;
-    leaf: boolean;
-    expanded: boolean;
-    selected: boolean;
-    isLoading: boolean;
-    disabled?: boolean | undefined;
     selectionMode: TTreeTableSelectionMode;
     cellCssClass?: string | undefined;
     borderStrategy: TTreeTableBorderStrategy;
-    slotRender?: TTreeTableSlot<T> | undefined;
+    slotRender?: TTreeTableSlot | undefined;
     checkboxColor: string;
   }>(),
   {}
 );
 
 // refs
-const selected = ref(propsComponent.selected);
+const selected = ref(propsComponent.item.selected);
 
 // functions
 function toggleExpanded() {
-  if (propsComponent.disabled) {
-    return;
-  }
   emitsComponent(
     "node-expand-toggle",
-    propsComponent.node,
-    !propsComponent.expanded
+    propsComponent.item,
+    !propsComponent.item.expanded
   );
 }
 function toggleCheckbox() {
-  if (propsComponent.disabled) {
-    return;
-  }
   emitsComponent(
     "node-checkbox-toggle",
-    propsComponent.node,
-    !propsComponent.selected
+    propsComponent.item,
+    !propsComponent.item.selected
   );
 }
 
@@ -65,10 +54,10 @@ const checkboxSelectionMode = computed(() => {
 });
 const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
-    return propsComponent.column.format(propsComponent.node);
+    return propsComponent.column.format(propsComponent.item);
   }
   if (propsComponent.column.fieldTarget) {
-    return propsComponent.node[propsComponent.column.fieldTarget];
+    return propsComponent.item.data[propsComponent.column.fieldTarget];
   }
 });
 const getcellCssClass = computed(() => {
@@ -77,7 +66,7 @@ const getcellCssClass = computed(() => {
   if (propsComponent.column.cssClass) {
     classes += ` ${propsComponent.column.cssClass}`;
   }
-  if (propsComponent.selected) {
+  if (propsComponent.item.selected) {
     classes += " mangrove64-selected";
   }
   switch (propsComponent.borderStrategy) {
@@ -95,13 +84,13 @@ const getcellCssClass = computed(() => {
 });
 const getCellStyle = computed(() => {
   return `padding-left: ${
-    propsComponent.level * propsComponent.indentationPx
+    propsComponent.item.level * propsComponent.indentationPx
   }px;`;
 });
 
 // watchs
 watch(
-  () => propsComponent.selected,
+  () => propsComponent.item.selected,
   (newValue) => {
     selected.value = newValue;
   }
@@ -118,12 +107,11 @@ watch(
         size="xs"
         dense
         :color="propsComponent.checkboxColor"
-        :disabled="propsComponent.disabled"
       />
-      <template v-if="!propsComponent.isLoading">
-        <template v-if="!propsComponent.leaf">
+      <template v-if="!propsComponent.item.loading">
+        <template v-if="!NodeItemApi.isLeaf(propsComponent.item)">
           <q-icon
-            v-if="!propsComponent.expanded"
+            v-if="!propsComponent.item.expanded"
             @click="toggleExpanded"
             name="chevron_right"
             size="1.2rem"
@@ -153,7 +141,7 @@ watch(
 
       <template v-if="propsComponent.slotRender">
         <component
-          :is="{ render: () => propsComponent.slotRender!({ node: propsComponent.node }) }"
+          :is="{ render: () => propsComponent.slotRender!({ nodeItem: propsComponent.item }) }"
         />
       </template>
       <div v-else>

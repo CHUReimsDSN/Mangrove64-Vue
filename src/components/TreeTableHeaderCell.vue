@@ -1,11 +1,11 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import type { TMangrove64TreeColumn } from "../models";
 import type { TTreeTableBorderStrategy, TTreeTableTheme } from "../private-models";
 
 // props
 const propsComponent = defineProps<{
-  column: TMangrove64TreeColumn<T>;
+  column: TMangrove64TreeColumn;
   index: number;
   resizableColumns: boolean;
   borderStrategy: TTreeTableBorderStrategy;

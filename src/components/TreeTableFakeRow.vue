@@ -1,29 +1,24 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts">
 import { computed } from "vue";
 import type {
   TMangrove64TreeColumn,
+  TNodeItem,
 } from "../models";
 import type {
   TTreeTableBorderStrategy,
-  TTreeTableNodeKey,
   TTreeTableTheme,
 } from "../private-models";
+import { NodeItemApi } from "../node-item";
 
 // emits
 const emitsComponent = defineEmits<{
-  (e: "node-click", node: T): void;
+  (e: "node-click", nodeItem: TNodeItem): void;
 }>();
 
 // props
 const propsComponent = defineProps<{
-  node: T;
-  columns: TMangrove64TreeColumn<T>[];
-  nodeKey: keyof T;
-  disabledKey: keyof T | undefined;
-  expanded: boolean;
-  selected: boolean;
-  hidden: boolean;
-  level: number;
+  item: TNodeItem;
+  columns: TMangrove64TreeColumn[];
   indentationPx: number;
   borderStrategy: TTreeTableBorderStrategy;
   rowCssClass: string | undefined;
@@ -32,31 +27,22 @@ const propsComponent = defineProps<{
   theme: TTreeTableTheme;
 }>();
 
-// consts
-const fakeElementPrefix = "__mangrove64-fake-row-";
-
 // functions
-function getNodeKeyValue(node: T) {
-  return node[propsComponent.nodeKey] as TTreeTableNodeKey;
-}
-function getNodeKeyData(node: T) {
-  return `${fakeElementPrefix}${getNodeKeyValue(node).toString()}`;
-}
-function onNodeClick(node: T) {
-  emitsComponent("node-click", node);
+function onNodeClick(nodeItem: TNodeItem) {
+  emitsComponent("node-click", nodeItem);
 }
 
 // computeds
 const rowClass = computed(() => {
   let classes = "mangrove64-row mangrove64-fake-row";
   classes += ` ${propsComponent.rowCssClass}`;
-  if (propsComponent.selected) {
+  if (propsComponent.item.selected) {
     classes += " mangrove64-row-selected";
     if (propsComponent.theme === 'dark') {
      classes += ' mangrove64-row-selected-dark' 
     }
   }
-  if (propsComponent.hidden) {
+  if (propsComponent.item.hidden) {
     classes += " mangrove64-row-hidden";
   }
   if (propsComponent.isDragging) {
@@ -84,9 +70,9 @@ const getcellCssClass = computed(() => {
 
 <template>
   <tr
-    @click="onNodeClick(propsComponent.node)"
+    @click="onNodeClick(propsComponent.item)"
     :class="rowClass"
-    :data-key="getNodeKeyData(propsComponent.node)"
+    :data-key="NodeItemApi.getFakeDataKeyValue(propsComponent.item)"
   >
     <template v-for="col in propsComponent.columns" :key="col.name">
       <td :class="getcellCssClass"></td>
