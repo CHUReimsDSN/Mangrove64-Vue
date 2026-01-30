@@ -710,55 +710,14 @@ function propagateSelectionUp(nodeKey: TTreeTableNodeKeyValue, state: boolean) {
   }
   propagateSelectionUp(hierarchy.parent, state);
 }
-function getElementFakeNodeKey(nodeKey: TTreeTableNodeKeyValue) {
-  return `${fakeElementPrefix}${nodeKey.toString()}`;
-}
-function setNodeChildren(node: T, children: T[]) {
-  (node as { [K in keyof typeof node]: T[] })[
-    propsComponent.childrenKey as keyof T
-  ] = children;
-}
-function setNodeParent(node: T, parent: TTreeTableNodeKeyValue | null) {
-  if (!propsComponent.parentKey) {
-    return;
-  }
-  (node as { [K in keyof typeof node]: TTreeTableNodeKeyValue | null })[
-    propsComponent.parentKey as keyof T
-  ] = parent;
-}
-function setNodeOrder(node: T, orderWithinParent: number) {
-  if (!propsComponent.orderKey) {
-    return;
-  }
-  (node as { [K in keyof typeof node]: number })[
-    propsComponent.orderKey as keyof T
-  ] = orderWithinParent;
-}
-function setNodeLeaf(node: T, state: boolean) {
-  if (!propsComponent.hasChildrenKey) {
-    return
-  }
-  (node as { [K in keyof typeof node]: boolean })[propsComponent.hasChildrenKey as keyof T] = state
-}
-function getNodeParentKey(node: T) {
-  return (node[propsComponent.parentKey as keyof T]) as TTreeTableNodeKeyValue | undefined;
-}
-
-function getNodeHierarchy(node: T) {
-  const nodeKey = getNodeKeyValue(node);
-  return hierarchiKeys.get(nodeKey);
-}
-function getNodeItemByKey(nodeKey: TTreeTableNodeKeyValue) {
+function getNodeItemByKey(nodeDataKey: TTreeTableNodeKeyValue) {
   return nodeItems.value.find((node) => {
-    return getNodeKeyValue(node) === nodeKey;
+    return NodeItemApi.getDataKeyValue(node) === nodeDataKey;
   });
 }
-function updateNode(nodeData: T) {
-  const nodeIndex = indexKeys.get(getNodeKeyValue(nodeData));
-  if (nodeIndex === undefined) {
-    return;
-  }
-  nodesRef.value[nodeIndex] = nodeData;
+function updateNode(nodeData: TNodeItemData) {
+  console.log('yoo')
+  // TODO
 }
 function addNode(
   nodeData: TNodeItemData,
@@ -789,7 +748,12 @@ function addNode(
     loading: false,
     data: nodeData
   }
+  
+  // TODO finir, compute children aussi, splice la liste pour ajouter
 
+  if (parentNodeItem) {
+    parentNodeItem.hierarchy.children.push(keyValue)
+  }
   void nextTick(() => {
     setupElementsKeys([nodeItem]);
   })
