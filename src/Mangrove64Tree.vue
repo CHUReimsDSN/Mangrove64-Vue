@@ -313,7 +313,8 @@ function useSortable(el: Ref<HTMLElement | null>) {
       isDragging.value = false;
       moveEventTargetAttribute = null;
       rerenderTrick.value++;
-      void nextTick(() => {
+      setTimeout(() => {
+        uniquizNodes();
         elementKeys.clear();
         setupElementsKeys(nodesRef.value);
         hook.stop();
@@ -321,10 +322,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         selectedKeys.value.forEach((selectedKey) => {
           setSelectedKeys(selectedKey, true);
         });
-        setTimeout(() => {
-          uniquizNodes();
-        }, 0)
-      })
+      }, 100)
     },
     onSelect: (event) => {
       const nodeKey = event.item.getAttribute(dataKeyAttribute);
