@@ -279,11 +279,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
           emitNodesMoveData.keyNewParent,
           emitNodesMoveData.positionStartInParent,
         );
-        let indexParent = 0
-        if (emitNodesMoveData.keyNewParent !== null) {
-          indexParent = (indexKeys.get(emitNodesMoveData.keyNewParent) ?? 0) + emitNodesMoveData.positionStartInParent
-        }
-        nodesRef.value.splice(indexParent, emitNodesMoveData.nodesToMove.length)
       }
 
       // re-adjust fake rows and toggle node if not toggled
@@ -297,12 +292,14 @@ function useSortable(el: Ref<HTMLElement | null>) {
           parentElement.insertBefore(targetElementFake, event.item);
         }
         if (!expandedKeys.value.has(targetNodeKey)) {
-          const node = getNodeByKey(targetNodeKey)
-          if (node) {
-            if (isNodeLeaf(node)) {
-              setNodeLeaf(node, false)
+          const parentNodeIndex = indexKeys.get(targetNodeKey)
+          if (parentNodeIndex) {
+            const parentNode = nodesRef.value[parentNodeIndex]!
+            const parentNodeChildrenCount = getNodeChildren(parentNode).length
+            if (isNodeLeaf(parentNode) && parentNodeChildrenCount > 0) {
+              setNodeLeaf(parentNode, false)
             }
-            await lazyLoad(node)
+            await onNodeExpandToggle(parentNode, true, parentNodeChildrenCount)
           }
         }
       }
@@ -635,21 +632,21 @@ async function lazyLoad(node: T) {
     done: doneCallback,
   });
 }
-function onNodeExpandToggle(node: T, state: boolean) {
+async function onNodeExpandToggle(node: T, state: boolean, defaultChildrenCount = 0) {
   if (state) {
     expandedKeys.value.add(getNodeKeyValue(node));
     emitsComponent("node-expand", node);
     if (isNodeLeaf(node)) {
       return;
     }
-    if (getNodeChildren(node).length > 0) {
+    if (getNodeChildren(node).length > defaultChildrenCount) {
       const hierarchy = getNodeHierarchy(node);
       if (!hierarchy) {
         return;
       }
       setChildrenHideState(hierarchy, false, false);
     } else {
-      lazyLoad(node)
+      await lazyLoad(node)
     }
   } else {
     expandedKeys.value.delete(getNodeKeyValue(node));
