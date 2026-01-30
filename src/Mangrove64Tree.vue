@@ -158,6 +158,17 @@ function useSortable(el: Ref<HTMLElement | null>) {
         return;
       }
 
+      // expand node if child
+      if (movingMode === 'child-to-previous') {
+        if (!expandedKeys.value.has(targetNodeKey)) {
+          const parentNodeIndex = indexKeys.get(targetNodeKey)
+          if (parentNodeIndex) {
+            const parentNode = nodesRef.value[parentNodeIndex]!
+            await onNodeExpandToggle(parentNode, true)
+          }
+        }
+      }
+
       // update moving nodes hierarchy and levels
       const emitNodesMoveData = {
         nodesToMove: <T[]>[],
@@ -281,7 +292,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         );
       }
 
-      // re-adjust fake rows and toggle node if not toggled
+      // re-adjust fake rows
       if (movingMode === "child-to-previous") {
         const targetElementFake = elementKeys.get(
           getElementFakeNodeKey(targetNodeKey)
@@ -290,17 +301,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
           const parentElement = targetElementFake.parentElement;
           parentElement.removeChild(targetElementFake);
           parentElement.insertBefore(targetElementFake, event.item);
-        }
-        if (!expandedKeys.value.has(targetNodeKey)) {
-          const parentNodeIndex = indexKeys.get(targetNodeKey)
-          if (parentNodeIndex) {
-            const parentNode = nodesRef.value[parentNodeIndex]!
-            const parentNodeChildrenCount = getNodeChildren(parentNode).length
-            if (isNodeLeaf(parentNode) && parentNodeChildrenCount > 0) {
-              setNodeLeaf(parentNode, false)
-            }
-            await onNodeExpandToggle(parentNode, true, parentNodeChildrenCount)
-          }
         }
       }
 
@@ -632,14 +632,14 @@ async function lazyLoad(node: T) {
     done: doneCallback,
   });
 }
-async function onNodeExpandToggle(node: T, state: boolean, defaultChildrenCount = 0) {
+async function onNodeExpandToggle(node: T, state: boolean) {
   if (state) {
     expandedKeys.value.add(getNodeKeyValue(node));
     emitsComponent("node-expand", node);
     if (isNodeLeaf(node)) {
       return;
     }
-    if (getNodeChildren(node).length > defaultChildrenCount) {
+    if (getNodeChildren(node).length > 0) {
       const hierarchy = getNodeHierarchy(node);
       if (!hierarchy) {
         return;
