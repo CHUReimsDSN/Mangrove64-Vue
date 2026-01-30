@@ -629,8 +629,8 @@ async function lazyLoad(node: T) {
     })
     setNodeChildren(node, allChildrenNode);
     nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
-    computeIndexKeys();
     void nextTick(() => {
+      computeIndexKeys();
       setupElementsKeys(allChildrenNode);
       if (selectedKeys.value.has(nodeKey)) {
         setSelectedKeys(nodeKey, true);

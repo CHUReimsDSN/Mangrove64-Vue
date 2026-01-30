@@ -2312,8 +2312,8 @@ const Oe = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
             }), y.value.set(de, O + 1);
           });
           const R = [...Et(u), ...C].filter((L, de, ye) => ye.map((Fe) => I(Fe)).indexOf(I(L)) === de);
-          vn(u, R), h.value.splice(Q + 1, 0, ...R), ve(), jt(() => {
-            pe(R), v.value.has(f) && (Y(f, !0), wt(f, !0)), $.value.delete(f);
+          vn(u, R), h.value.splice(Q + 1, 0, ...R), jt(() => {
+            ve(), pe(R), v.value.has(f) && (Y(f, !0), wt(f, !0)), $.value.delete(f);
           });
         }
       });
