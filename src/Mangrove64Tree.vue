@@ -125,204 +125,209 @@ function useSortable(el: Ref<HTMLElement | null>) {
       isDragging.value = true;
     },
     onEnd: async (event) => {
-      const nodeAttribute = event.item.getAttribute(dataKeyAttribute);
-      if (!nodeAttribute) {
-        isDragging.value = false;
-        return;
-      }
-      if (!selectedKeys.value.has(castAttributeToNodeKeyType(nodeAttribute))) {
-        isDragging.value = false;
-        return;
-      }
-      if (nodeAttribute.includes(fakeElementPrefix)) {
-        isDragging.value = false;
-        return;
-      }
-      if (!moveEventTargetAttribute) {
-        isDragging.value = false;
-        return;
-      }
+      setTimeout(async () => {
 
-      // determine mode
-      const movingMode: "child-to-previous" | "brother-to-previous" =
-        moveEventTargetAttribute.includes(fakeElementPrefix)
-          ? "brother-to-previous"
-          : "child-to-previous";
-      const targetNodeKey = castAttributeToNodeKeyType(
-        moveEventTargetAttribute.replaceAll(fakeElementPrefix, "")
-      );
-      const targetHierarchy = hierarchiKeys.get(targetNodeKey);
-      if (!targetHierarchy) {
-        isDragging.value = false;
-        return;
-      }
-
-      // expand node if child
-      let hasExpandParent = false
-      if (movingMode === 'child-to-previous') {
-        if (!expandedKeys.value.has(targetNodeKey)) {
-          const parentNodeIndex = indexKeys.get(targetNodeKey)
-          if (parentNodeIndex) {
-            const parentNode = nodesRef.value[parentNodeIndex]!
-            await onNodeExpandToggle(parentNode, true)
-            hasExpandParent = true
-          }
+        const nodeAttribute = event.item.getAttribute(dataKeyAttribute);
+        if (!nodeAttribute) {
+          isDragging.value = false;
+          return;
         }
-      }
-
-      // update moving nodes hierarchy and levels
-      const emitNodesMoveData = {
-        nodesToMove: <T[]>[],
-        keyNewParent: <TTreeTableNodeKey | null>null,
-        positionStartInParent: -1
-      }
-      let hasResetParentChildren = false;
-      const keys = [...selectedKeys.value]
-        .sort((selectedA, selectedB) => {
-          return (
-            (indexKeys.get(selectedA) ?? 0) - (indexKeys.get(selectedB) ?? 0)
-          );
-        })
-      for (const movingNodeKey of keys) {
-
-        const hierarchyMovingNode = hierarchiKeys.get(movingNodeKey);
-        if (!hierarchyMovingNode) {
+        if (!selectedKeys.value.has(castAttributeToNodeKeyType(nodeAttribute))) {
+          isDragging.value = false;
+          return;
+        }
+        if (nodeAttribute.includes(fakeElementPrefix)) {
+          isDragging.value = false;
+          return;
+        }
+        if (!moveEventTargetAttribute) {
+          isDragging.value = false;
           return;
         }
 
-        if (selectedKeys.value.has(hierarchyMovingNode.parent)) {
-          const levelMovingParent =
-            levelKeys.value.get(hierarchyMovingNode.parent) ?? -1;
-          levelKeys.value.set(movingNodeKey, levelMovingParent + 1);
+
+
+        // determine mode
+        const movingMode: "child-to-previous" | "brother-to-previous" =
+          moveEventTargetAttribute.includes(fakeElementPrefix)
+            ? "brother-to-previous"
+            : "child-to-previous";
+        const targetNodeKey = castAttributeToNodeKeyType(
+          moveEventTargetAttribute.replaceAll(fakeElementPrefix, "")
+        );
+        const targetHierarchy = hierarchiKeys.get(targetNodeKey);
+        if (!targetHierarchy) {
+          isDragging.value = false;
           return;
         }
 
-        const oldParentHierarchy = hierarchiKeys.get(
-          hierarchyMovingNode.parent
-        );
-        if (oldParentHierarchy) {
-          oldParentHierarchy.children = oldParentHierarchy.children.filter(
-            (childFilter) => {
-              return childFilter !== movingNodeKey;
+        // expand node if child
+        let hasExpandParent = false
+        if (movingMode === 'child-to-previous') {
+          if (!expandedKeys.value.has(targetNodeKey)) {
+            const parentNodeIndex = indexKeys.get(targetNodeKey)
+            if (parentNodeIndex) {
+              const parentNode = nodesRef.value[parentNodeIndex]!
+              await onNodeExpandToggle(parentNode, true)
+              hasExpandParent = true
             }
-          );
+          }
         }
 
-        let newPositionInParent = -1;
+        // update moving nodes hierarchy and levels
+        const emitNodesMoveData = {
+          nodesToMove: <T[]>[],
+          keyNewParent: <TTreeTableNodeKey | null>null,
+          positionStartInParent: -1
+        }
+        let hasResetParentChildren = false;
+        const keys = [...selectedKeys.value]
+          .sort((selectedA, selectedB) => {
+            return (
+              (indexKeys.get(selectedA) ?? 0) - (indexKeys.get(selectedB) ?? 0)
+            );
+          })
+        for (const movingNodeKey of keys) {
 
-        if (movingMode === "brother-to-previous") {
-          hierarchyMovingNode.parent = targetHierarchy.parent;
-          const targetParentHierarchy = hierarchiKeys.get(
-            targetHierarchy.parent
+          const hierarchyMovingNode = hierarchiKeys.get(movingNodeKey);
+          if (!hierarchyMovingNode) {
+            return;
+          }
+
+          if (selectedKeys.value.has(hierarchyMovingNode.parent)) {
+            const levelMovingParent =
+              levelKeys.value.get(hierarchyMovingNode.parent) ?? -1;
+            levelKeys.value.set(movingNodeKey, levelMovingParent + 1);
+            return;
+          }
+
+          const oldParentHierarchy = hierarchiKeys.get(
+            hierarchyMovingNode.parent
           );
-          if (targetParentHierarchy) {
-            newPositionInParent = targetParentHierarchy.children.findIndex(
-              (childFindIndex) => {
-                return childFindIndex === targetNodeKey;
+          if (oldParentHierarchy) {
+            oldParentHierarchy.children = oldParentHierarchy.children.filter(
+              (childFilter) => {
+                return childFilter !== movingNodeKey;
               }
             );
-            if (newPositionInParent !== -1) {
-              newPositionInParent += 1;
-            }
-            targetParentHierarchy.children.splice(
-              newPositionInParent,
-              0,
-              movingNodeKey
+          }
+
+          let newPositionInParent = -1;
+
+          if (movingMode === "brother-to-previous") {
+            hierarchyMovingNode.parent = targetHierarchy.parent;
+            const targetParentHierarchy = hierarchiKeys.get(
+              targetHierarchy.parent
             );
-          }
-        } else if (movingMode === "child-to-previous") {
-          hierarchyMovingNode.parent = targetNodeKey;
-          const targetHierarchy = hierarchiKeys.get(targetNodeKey);
-          if (targetHierarchy) {
-            targetHierarchy.children.unshift(movingNodeKey);
-          }
-        }
-
-        // nodesref update
-        if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
-          const keyNewParent =
-            hierarchyMovingNode.parent === rootHierarchyKey
-              ? null
-              : hierarchyMovingNode.parent;
-          const recursiveChildrenCount = getRecursiveChildrenCount(
-            movingNodeKey,
-            0
-          );
-          const nodeRefOldIndex = indexKeys.get(movingNodeKey) ?? 0;
-          const nodesRefToMove = nodesRef.value.splice(
-            nodeRefOldIndex,
-            recursiveChildrenCount + 1
-          );
-          computeIndexKeys();
-          const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
-          if (keyNewParent !== null) {
-            const parentNodeIndex = indexKeys.get(keyNewParent);
-            if (parentNodeIndex !== undefined) {
-              const parentNode = nodesRef.value[parentNodeIndex]!;
-              let parentChildren: T[] = [];
-              if (!hasResetParentChildren) {
-                parentChildren = [];
-                hasResetParentChildren = true;
-              } else {
-                parentChildren = parentChildren.concat(
-                  getNodeChildren(parentNode)
-                );
+            if (targetParentHierarchy) {
+              newPositionInParent = targetParentHierarchy.children.findIndex(
+                (childFindIndex) => {
+                  return childFindIndex === targetNodeKey;
+                }
+              );
+              if (newPositionInParent !== -1) {
+                newPositionInParent += 1;
               }
-              parentChildren.push(nodesRefToMove[0]!);
-              setNodeChildren(parentNode, parentChildren);
-              if (isNodeLeaf(parentNode)) {
-                setNodeLeaf(parentNode, false)
-              }
+              targetParentHierarchy.children.splice(
+                newPositionInParent,
+                0,
+                movingNodeKey
+              );
+            }
+          } else if (movingMode === "child-to-previous") {
+            hierarchyMovingNode.parent = targetNodeKey;
+            const targetHierarchy = hierarchiKeys.get(targetNodeKey);
+            if (targetHierarchy) {
+              targetHierarchy.children.unshift(movingNodeKey);
             }
           }
-          setNodeParent(nodesRefToMove[0]!, keyNewParent);
-          setNodeOrder(nodesRefToMove[0]!, newPositionInParent)
-          nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
-          computeIndexKeys();
-          if (emitNodesMoveData.positionStartInParent === -1) {
-            emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
+
+          // nodesref update
+          if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
+            const keyNewParent =
+              hierarchyMovingNode.parent === rootHierarchyKey
+                ? null
+                : hierarchyMovingNode.parent;
+            const recursiveChildrenCount = getRecursiveChildrenCount(
+              movingNodeKey,
+              0
+            );
+            const nodeRefOldIndex = indexKeys.get(movingNodeKey) ?? 0;
+            const nodesRefToMove = nodesRef.value.splice(
+              nodeRefOldIndex,
+              recursiveChildrenCount + 1
+            );
+            computeIndexKeys();
+            const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
+            if (keyNewParent !== null) {
+              const parentNodeIndex = indexKeys.get(keyNewParent);
+              if (parentNodeIndex !== undefined) {
+                const parentNode = nodesRef.value[parentNodeIndex]!;
+                let parentChildren: T[] = [];
+                if (!hasResetParentChildren) {
+                  parentChildren = [];
+                  hasResetParentChildren = true;
+                } else {
+                  parentChildren = parentChildren.concat(
+                    getNodeChildren(parentNode)
+                  );
+                }
+                parentChildren.push(nodesRefToMove[0]!);
+                setNodeChildren(parentNode, parentChildren);
+                if (isNodeLeaf(parentNode)) {
+                  setNodeLeaf(parentNode, false)
+                }
+              }
+            }
+            setNodeParent(nodesRefToMove[0]!, keyNewParent);
+            setNodeOrder(nodesRefToMove[0]!, newPositionInParent)
+            nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
+            computeIndexKeys();
+            if (emitNodesMoveData.positionStartInParent === -1) {
+              emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
+            }
+            emitNodesMoveData.keyNewParent = keyNewParent
+            emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
           }
-          emitNodesMoveData.keyNewParent = keyNewParent
-          emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
         }
-      }
 
-      // trigger nodes-moves and purge inserted ones
-      if (emitNodesMoveData.nodesToMove.length > 0) {
-        await emitsComponent(
-          "nodes-move",
-          emitNodesMoveData.nodesToMove,
-          emitNodesMoveData.keyNewParent,
-          emitNodesMoveData.positionStartInParent,
-        );
-      }
-
-      // re-adjust fake rows
-      if (movingMode === "child-to-previous") {
-        const targetElementFake = elementKeys.get(
-          getElementFakeNodeKey(targetNodeKey)
-        );
-        if (targetElementFake && targetElementFake.parentElement) {
-          const parentElement = targetElementFake.parentElement;
-          parentElement.removeChild(targetElementFake);
-          parentElement.insertBefore(targetElementFake, event.item);
+        // trigger nodes-moves and purge inserted ones
+        if (emitNodesMoveData.nodesToMove.length > 0) {
+          await emitsComponent(
+            "nodes-move",
+            emitNodesMoveData.nodesToMove,
+            emitNodesMoveData.keyNewParent,
+            emitNodesMoveData.positionStartInParent,
+          );
         }
-      }
 
-      // end
-      isDragging.value = false;
-      moveEventTargetAttribute = null;
-      rerenderTrick.value++;
-      setTimeout(() => {
-        uniquizNodes();
-        elementKeys.clear();
-        setupElementsKeys(nodesRef.value);
-        hook.stop();
-        hook.start();
-        selectedKeys.value.forEach((selectedKey) => {
-          setSelectedKeys(selectedKey, true);
-        });
-      }, 100)
+        // re-adjust fake rows
+        if (movingMode === "child-to-previous") {
+          const targetElementFake = elementKeys.get(
+            getElementFakeNodeKey(targetNodeKey)
+          );
+          if (targetElementFake && targetElementFake.parentElement) {
+            const parentElement = targetElementFake.parentElement;
+            parentElement.removeChild(targetElementFake);
+            parentElement.insertBefore(targetElementFake, event.item);
+          }
+        }
+
+        // end
+        isDragging.value = false;
+        moveEventTargetAttribute = null;
+        rerenderTrick.value++;
+        setTimeout(() => {
+          uniquizNodes();
+          elementKeys.clear();
+          setupElementsKeys(nodesRef.value);
+          hook.stop();
+          hook.start();
+          selectedKeys.value.forEach((selectedKey) => {
+            setSelectedKeys(selectedKey, true);
+          });
+        }, 50)
+      }, 50)
     },
     onSelect: (event) => {
       const nodeKey = event.item.getAttribute(dataKeyAttribute);

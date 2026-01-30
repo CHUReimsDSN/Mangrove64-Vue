@@ -2014,119 +2014,121 @@ const Oe = "data-key", Xe = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
           N.value = !0;
         },
         onEnd: async (A) => {
-          const O = A.item.getAttribute(Oe);
-          if (!O) {
-            N.value = !1;
-            return;
-          }
-          if (!v.value.has(ge(O))) {
-            N.value = !1;
-            return;
-          }
-          if (O.includes(Xe)) {
-            N.value = !1;
-            return;
-          }
-          if (!i) {
-            N.value = !1;
-            return;
-          }
-          const R = i.includes(Xe) ? "brother-to-previous" : "child-to-previous", L = ge(
-            i.replaceAll(Xe, "")
-          ), de = s.get(L);
-          if (!de) {
-            N.value = !1;
-            return;
-          }
-          if (R === "child-to-previous" && !m.value.has(L)) {
-            const z = c.get(L);
-            if (z) {
-              const Z = h.value[z];
-              await $t(Z, !0);
-            }
-          }
-          const ye = {
-            nodesToMove: [],
-            keyNewParent: null,
-            positionStartInParent: -1
-          };
-          let Fe = !1;
-          const Le = [...v.value].sort((z, Z) => (c.get(z) ?? 0) - (c.get(Z) ?? 0));
-          for (const z of Le) {
-            const Z = s.get(z);
-            if (!Z)
-              return;
-            if (v.value.has(Z.parent)) {
-              const ie = y.value.get(Z.parent) ?? -1;
-              y.value.set(z, ie + 1);
+          setTimeout(async () => {
+            const O = A.item.getAttribute(Oe);
+            if (!O) {
+              N.value = !1;
               return;
             }
-            const Gt = s.get(
-              Z.parent
-            );
-            Gt && (Gt.children = Gt.children.filter(
-              (ie) => ie !== z
-            ));
-            let Me = -1;
-            if (R === "brother-to-previous") {
-              Z.parent = de.parent;
-              const ie = s.get(
-                de.parent
-              );
-              ie && (Me = ie.children.findIndex(
-                (Wt) => Wt === L
-              ), Me !== -1 && (Me += 1), ie.children.splice(
-                Me,
-                0,
-                z
-              ));
-            } else if (R === "child-to-previous") {
-              Z.parent = L;
-              const ie = s.get(L);
-              ie && ie.children.unshift(z);
+            if (!v.value.has(ge(O))) {
+              N.value = !1;
+              return;
             }
-            if (Me !== -1 && R === "brother-to-previous" || R === "child-to-previous") {
-              const ie = Z.parent === qe ? null : Z.parent, Wt = Ne(
-                z,
-                0
-              ), vo = c.get(z) ?? 0, rt = h.value.splice(
-                vo,
-                Wt + 1
-              );
-              ve();
-              const bo = c.get(L) ?? 0;
-              if (ie !== null) {
-                const _n = c.get(ie);
-                if (_n !== void 0) {
-                  const Ct = h.value[_n];
-                  let it = [];
-                  Fe ? it = it.concat(
-                    Et(Ct)
-                  ) : (it = [], Fe = !0), it.push(rt[0]), vn(Ct, it), wn(Ct) && ro(Ct, !1);
-                }
+            if (O.includes(Xe)) {
+              N.value = !1;
+              return;
+            }
+            if (!i) {
+              N.value = !1;
+              return;
+            }
+            const R = i.includes(Xe) ? "brother-to-previous" : "child-to-previous", L = ge(
+              i.replaceAll(Xe, "")
+            ), de = s.get(L);
+            if (!de) {
+              N.value = !1;
+              return;
+            }
+            if (R === "child-to-previous" && !m.value.has(L)) {
+              const z = c.get(L);
+              if (z) {
+                const Z = h.value[z];
+                await $t(Z, !0);
               }
-              no(rt[0], ie), oo(rt[0], Me), h.value.splice(bo + 1, 0, ...rt), ve(), ye.positionStartInParent === -1 && (ye.positionStartInParent = w.value ? Me + 2 : Me + 1), ye.keyNewParent = ie, ye.nodesToMove.push(rt[0]);
             }
-          }
-          if (ye.nodesToMove.length > 0 && await r(
-            "nodes-move",
-            ye.nodesToMove,
-            ye.keyNewParent,
-            ye.positionStartInParent
-          ), R === "child-to-previous") {
-            const z = l.get(
-              nt(L)
-            );
-            if (z && z.parentElement) {
-              const Z = z.parentElement;
-              Z.removeChild(z), Z.insertBefore(z, A.item);
+            const ye = {
+              nodesToMove: [],
+              keyNewParent: null,
+              positionStartInParent: -1
+            };
+            let Fe = !1;
+            const Le = [...v.value].sort((z, Z) => (c.get(z) ?? 0) - (c.get(Z) ?? 0));
+            for (const z of Le) {
+              const Z = s.get(z);
+              if (!Z)
+                return;
+              if (v.value.has(Z.parent)) {
+                const ie = y.value.get(Z.parent) ?? -1;
+                y.value.set(z, ie + 1);
+                return;
+              }
+              const Gt = s.get(
+                Z.parent
+              );
+              Gt && (Gt.children = Gt.children.filter(
+                (ie) => ie !== z
+              ));
+              let Me = -1;
+              if (R === "brother-to-previous") {
+                Z.parent = de.parent;
+                const ie = s.get(
+                  de.parent
+                );
+                ie && (Me = ie.children.findIndex(
+                  (Wt) => Wt === L
+                ), Me !== -1 && (Me += 1), ie.children.splice(
+                  Me,
+                  0,
+                  z
+                ));
+              } else if (R === "child-to-previous") {
+                Z.parent = L;
+                const ie = s.get(L);
+                ie && ie.children.unshift(z);
+              }
+              if (Me !== -1 && R === "brother-to-previous" || R === "child-to-previous") {
+                const ie = Z.parent === qe ? null : Z.parent, Wt = Ne(
+                  z,
+                  0
+                ), vo = c.get(z) ?? 0, rt = h.value.splice(
+                  vo,
+                  Wt + 1
+                );
+                ve();
+                const bo = c.get(L) ?? 0;
+                if (ie !== null) {
+                  const _n = c.get(ie);
+                  if (_n !== void 0) {
+                    const Ct = h.value[_n];
+                    let it = [];
+                    Fe ? it = it.concat(
+                      Et(Ct)
+                    ) : (it = [], Fe = !0), it.push(rt[0]), vn(Ct, it), wn(Ct) && ro(Ct, !1);
+                  }
+                }
+                no(rt[0], ie), oo(rt[0], Me), h.value.splice(bo + 1, 0, ...rt), ve(), ye.positionStartInParent === -1 && (ye.positionStartInParent = w.value ? Me + 2 : Me + 1), ye.keyNewParent = ie, ye.nodesToMove.push(rt[0]);
+              }
             }
-          }
-          N.value = !1, i = null, P.value++, setTimeout(() => {
-            be(), l.clear(), pe(h.value), le.stop(), le.start(), v.value.forEach((z) => {
-              Y(z, !0);
-            });
-          }, 100);
+            if (ye.nodesToMove.length > 0 && await r(
+              "nodes-move",
+              ye.nodesToMove,
+              ye.keyNewParent,
+              ye.positionStartInParent
+            ), R === "child-to-previous") {
+              const z = l.get(
+                nt(L)
+              );
+              if (z && z.parentElement) {
+                const Z = z.parentElement;
+                Z.removeChild(z), Z.insertBefore(z, A.item);
+              }
+            }
+            N.value = !1, i = null, P.value++, setTimeout(() => {
+              be(), l.clear(), pe(h.value), le.stop(), le.start(), v.value.forEach((z) => {
+                Y(z, !0);
+              });
+            }, 50);
+          }, 50);
         },
         onSelect: (A) => {
           const O = A.item.getAttribute(Oe);
