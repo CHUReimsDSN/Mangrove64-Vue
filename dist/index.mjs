@@ -2031,6 +2031,7 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
             N.value = !1;
             return;
           }
+          console.time("end");
           const B = i.includes(He) ? "brother-to-previous" : "child-to-previous", z = ge(
             i.replaceAll(He, "")
           ), de = s.get(z);
@@ -2106,7 +2107,7 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
                   ) : (it = [], Fe = !0), it.push(rt[0]), gn(_n, it);
                 }
               }
-              no(rt[0], ie), oo(rt[0], Me), h.value.splice(Cn + 1, 0, ...rt), console.log(h.v), ve(), ye.positionStartInParent === -1 && (ye.positionStartInParent = w.value ? Me + 2 : Me + 1), ye.keyNewParent = ie, ye.nodesToMove.push(rt[0]);
+              no(rt[0], ie), oo(rt[0], Me), h.value.splice(Cn + 1, 0, ...rt), ve(), ye.positionStartInParent === -1 && (ye.positionStartInParent = w.value ? Me + 2 : Me + 1), ye.keyNewParent = ie, ye.nodesToMove.push(rt[0]);
             }
           }), ye.nodesToMove.length > 0 && await r(
             "nodes-move",
@@ -2126,7 +2127,7 @@ const Oe = "data-key", He = "__mangrove64-fake-row-", qe = "__mangrove64-null-hi
             be(), l.clear(), pe(h.value), le.stop(), le.start(), v.value.forEach((I) => {
               Y(I, !0);
             });
-          });
+          }), console.timeEnd("end");
         },
         onSelect: (A) => {
           const O = A.item.getAttribute(Oe);

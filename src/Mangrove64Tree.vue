@@ -142,6 +142,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         isDragging.value = false;
         return;
       }
+      console.time('end')
 
       // determine mode
       const movingMode: "child-to-previous" | "brother-to-previous" =
@@ -276,7 +277,6 @@ function useSortable(el: Ref<HTMLElement | null>) {
             setNodeParent(nodesRefToMove[0]!, keyNewParent);
             setNodeOrder(nodesRefToMove[0]!, newPositionInParent);
             nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
-            console.log(nodesRef.v)
             computeIndexKeys();
             if (emitNodesMoveData.positionStartInParent === -1) {
               emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
@@ -322,6 +322,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
           setSelectedKeys(selectedKey, true);
         });
       });
+      console.timeEnd('end')
     },
     onSelect: (event) => {
       const nodeKey = event.item.getAttribute(dataKeyAttribute);
