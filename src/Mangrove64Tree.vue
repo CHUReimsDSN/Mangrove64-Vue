@@ -323,8 +323,7 @@ function useSortable(el: Ref<HTMLElement | null>) {
         });
         setTimeout(() => {
           uniquizNodes();
-          console.log(nodesRef.value)
-        }, 200)
+        }, 0)
       });
       console.timeEnd('end')
     },
@@ -492,7 +491,6 @@ function computeIndexKeys() {
 }
 function uniquizNodes() {
   nodesRef.value = nodesRef.value.filter((nodeFilter, nodeIndex, nodeArray) => {
-    console.log(nodeFilter)
     return nodeArray.map((nodeMap) => {
       return getNodeKeyValue(nodeMap)
     }).indexOf(getNodeKeyValue(nodeFilter)) === nodeIndex
