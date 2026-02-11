@@ -1,13 +1,15 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts" generic="T extends TMangreove64NodeItemData">
 import type {
   TMangrove64TreeColumn,
+  TMangrove64NodeItem,
+  TMangreove64NodeItemData,
 } from "../models";
 import type {
-  TTreeTableBorderStrategy,
-  TTreeTableNodeKey,
-  TTreeTableSelectionMode,
-  TTreeTableSlot,
-  TTreeTableTheme,
+  TMangrove64BorderStrategy,
+  TMangrove64DragMode,
+  TMangrove64SelectionMode,
+  TMangrove64Slot,
+  TMangrove64Theme,
 } from "../private-models";
 import { computed } from "vue";
 import TreeTableBodyCell from "./TreeTableBodyCell.vue";
@@ -15,85 +17,79 @@ import TreeTableBodyFirstRowCell from "./TreeTableBodyFirstRowCell.vue";
 
 // emits
 const emitsComponent = defineEmits<{
-  (e: "node-expand-toggle", node: T, state: boolean): void;
-  (e: "node-checkbox-toggle", node: T, state: boolean): void;
-  (e: "node-click", node: T): void;
+  (e: "node-expand-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
+  (e: "node-checkbox-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
+  (e: "node-click", nodeItem: TMangrove64NodeItem<T>): void;
+  (e: "on-drag-start", event: DragEvent): void;
+  (e: "on-drag-enter", event: DragEvent, nodeItem: TMangrove64NodeItem<T>, mode: TMangrove64DragMode): void;
+  (e: "on-drag-end", event: DragEvent): void;
 }>();
 
 // props
 const propsComponent = defineProps<{
-  node: T;
+  item: TMangrove64NodeItem<T>;
   columns: TMangrove64TreeColumn<T>[];
-  nodeKey: keyof T;
-  childrenKey: keyof T;
-  hasChildrenKey: keyof T;
-  disabledKey: keyof T | undefined;
-  selectionMode: TTreeTableSelectionMode;
-  expanded: boolean;
-  selected: boolean;
-  isLoading: boolean;
-  hidden: boolean;
-  level: number;
+  selectionMode: TMangrove64SelectionMode;
+  draggable: boolean;
   indentationPx: number;
-  borderStrategy: TTreeTableBorderStrategy;
+  borderStrategy: TMangrove64BorderStrategy;
   rowCssClass: string | undefined;
   cellCssClass: string | undefined;
-  slotMap: Map<string, TTreeTableSlot<T>>;
+  slotMap: Map<string, TMangrove64Slot<T>>;
   checkboxColor: string;
-  theme: TTreeTableTheme;
+  theme: TMangrove64Theme;
 }>();
 
 // functions
-function nodeToggleExpand(node: T, state: boolean) {
-  emitsComponent("node-expand-toggle", node, state);
+function nodeToggleExpand(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
+  emitsComponent("node-expand-toggle", nodeItem, state);
 }
-function onToggleCheckbox(node: T, state: boolean) {
-  emitsComponent("node-checkbox-toggle", node, state);
+function onToggleCheckbox(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
+  emitsComponent("node-checkbox-toggle", nodeItem, state);
 }
-function onNodeClick(node: T) {
-  emitsComponent("node-click", node);
+function onNodeClick(nodeItem: TMangrove64NodeItem<T>) {
+  emitsComponent("node-click", nodeItem);
 }
-function getNodeKeyValue(node: T) {
-  return node[propsComponent.nodeKey] as TTreeTableNodeKey;
+function onDragOver(event: DragEvent) {
+  event.preventDefault()
 }
 
 // computeds
-const isNodeLeaf = computed(() => {
-  return !(propsComponent.node[propsComponent.hasChildrenKey] as boolean);
-});
-const isNodeDisabled = computed(() => {
-  if (propsComponent.disabledKey === undefined) {
-    return undefined;
-  }
-  return propsComponent.node[propsComponent.disabledKey] as boolean;
-});
 const rowClass = computed(() => {
   let classes = "mangrove64-row";
   classes += ` ${propsComponent.rowCssClass}`;
-  if (propsComponent.selected) {
+  if (propsComponent.item.selected) {
     classes += " mangrove64-row-selected";
     if (propsComponent.theme === 'dark') {
       classes += ' mangrove64-row-selected-dark'
     }
   }
-  if (propsComponent.hidden) {
+  if (propsComponent.item.hidden) {
     classes += " mangrove64-row-hidden";
+  }
+  if (propsComponent.item.highlighted) {
+    classes += " mangrove64-row-highlight"
+    if (propsComponent.theme === 'dark') {
+      classes += " mangrove64-row-highlight-dark"
+    }
   }
   return classes;
 });
 </script>
 
 <template>
-  <tr @click="onNodeClick(propsComponent.node)" :class="rowClass" :data-key="getNodeKeyValue(propsComponent.node)">
+  <tr @click="onNodeClick(propsComponent.item)" :class="rowClass"
+    :draggable="propsComponent.draggable && propsComponent.item.selected && !propsComponent.item.disabled"
+    @dragstart="emitsComponent('on-drag-start', $event)"
+    @dragenter="emitsComponent('on-drag-enter', $event, propsComponent.item, 'child')" @dragover="onDragOver($event)"
+    @dragend="emitsComponent('on-drag-end', $event)" :data-key="propsComponent.item.dataIdentifierValue">
     <template v-for="(col, colIndex) in propsComponent.columns" :key="col.name">
-      <TreeTableBodyFirstRowCell v-if="colIndex === 0" :column="col" :node="propsComponent.node"
-        :level="propsComponent.level" :indentationPx="propsComponent.indentationPx" :leaf="isNodeLeaf"
-        :expanded="propsComponent.expanded" :disabled="isNodeDisabled" :selected="propsComponent.selected"
-        :isLoading="propsComponent.isLoading" :selectionMode="propsComponent.selectionMode"
+      <TreeTableBodyFirstRowCell v-if="colIndex === 0" :column="col" :item="propsComponent.item"
+        :indentationPx="propsComponent.indentationPx" :selectionMode="propsComponent.selectionMode"
         :cell-css-class="propsComponent.cellCssClass" :border-strategy="propsComponent.borderStrategy"
         :slot-render="propsComponent.slotMap.get(col.name)" :checkbox-color="propsComponent.checkboxColor"
         @node-expand-toggle="nodeToggleExpand" @node-checkbox-toggle="onToggleCheckbox" />
-      <TreeTableBodyCell v-else :column="col" :node="propsComponent.node" :cell-css-class="propsComponent.cellCssClass"
+      <TreeTableBodyCell v-else :column="col" :item="propsComponent.item" :cell-css-class="propsComponent.cellCssClass"
         :border-strategy="propsComponent.borderStrategy" :slot-render="propsComponent.slotMap.get(col.name)" />
     </template>
   </tr>

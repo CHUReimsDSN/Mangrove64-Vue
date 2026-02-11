@@ -1,61 +1,50 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts" generic="T extends TMangreove64NodeItemData">
 import { computed, ref, watch } from "vue";
 import { QIcon, QCheckbox, QSpinner } from 'quasar'
-import type { TMangrove64TreeColumn } from "../models";
+import type { TMangrove64TreeColumn, TMangrove64NodeItem, TMangreove64NodeItemData } from "../models";
 import type {
-  TTreeTableBorderStrategy,
-  TTreeTableSelectionMode,
-  TTreeTableSlot,
+  TMangrove64BorderStrategy,
+  TMangrove64SelectionMode,
+  TMangrove64Slot,
 } from "../private-models";
+
 // emits
 const emitsComponent = defineEmits<{
-  (e: "node-expand-toggle", node: T, state: boolean): void;
-  (e: "node-checkbox-toggle", node: T, state: boolean): void;
+  (e: "node-expand-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
+  (e: "node-checkbox-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
 }>();
 
 // props
 const propsComponent = withDefaults(
   defineProps<{
-    node: T;
+    item: TMangrove64NodeItem<T>;
     column: TMangrove64TreeColumn<T>;
-    level: number;
     indentationPx: number;
-    leaf: boolean;
-    expanded: boolean;
-    selected: boolean;
-    isLoading: boolean;
-    disabled?: boolean | undefined;
-    selectionMode: TTreeTableSelectionMode;
+    selectionMode: TMangrove64SelectionMode;
     cellCssClass?: string | undefined;
-    borderStrategy: TTreeTableBorderStrategy;
-    slotRender?: TTreeTableSlot<T> | undefined;
+    borderStrategy: TMangrove64BorderStrategy;
+    slotRender?: TMangrove64Slot<T> | undefined;
     checkboxColor: string;
   }>(),
   {}
 );
 
 // refs
-const selected = ref(propsComponent.selected);
+const selected = ref(propsComponent.item.selected);
 
 // functions
 function toggleExpanded() {
-  if (propsComponent.disabled) {
-    return;
-  }
   emitsComponent(
     "node-expand-toggle",
-    propsComponent.node,
-    !propsComponent.expanded
+    propsComponent.item,
+    !propsComponent.item.expanded
   );
 }
 function toggleCheckbox() {
-  if (propsComponent.disabled) {
-    return;
-  }
   emitsComponent(
     "node-checkbox-toggle",
-    propsComponent.node,
-    !propsComponent.selected
+    propsComponent.item,
+    !propsComponent.item.selected
   );
 }
 
@@ -65,11 +54,12 @@ const checkboxSelectionMode = computed(() => {
 });
 const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
-    return propsComponent.column.format(propsComponent.node);
+    return propsComponent.column.format(propsComponent.item.data);
   }
   if (propsComponent.column.fieldTarget) {
-    return propsComponent.node[propsComponent.column.fieldTarget];
+    return propsComponent.item.data[propsComponent.column.fieldTarget];
   }
+  return ''
 });
 const getcellCssClass = computed(() => {
   let classes = "mangrove64-cell";
@@ -77,7 +67,7 @@ const getcellCssClass = computed(() => {
   if (propsComponent.column.cssClass) {
     classes += ` ${propsComponent.column.cssClass}`;
   }
-  if (propsComponent.selected) {
+  if (propsComponent.item.selected) {
     classes += " mangrove64-selected";
   }
   switch (propsComponent.borderStrategy) {
@@ -95,13 +85,13 @@ const getcellCssClass = computed(() => {
 });
 const getCellStyle = computed(() => {
   return `padding-left: ${
-    propsComponent.level * propsComponent.indentationPx
+    propsComponent.item.level * propsComponent.indentationPx
   }px;`;
 });
 
 // watchs
 watch(
-  () => propsComponent.selected,
+  () => propsComponent.item.selected,
   (newValue) => {
     selected.value = newValue;
   }
@@ -117,13 +107,13 @@ watch(
         v-model="selected"
         size="xs"
         dense
+        :disable="propsComponent.item.disabled"
         :color="propsComponent.checkboxColor"
-        :disabled="propsComponent.disabled"
       />
-      <template v-if="!propsComponent.isLoading">
-        <template v-if="!propsComponent.leaf">
+      <template v-if="!propsComponent.item.loading">
+        <template v-if="!propsComponent.item.isLeaf">
           <q-icon
-            v-if="!propsComponent.expanded"
+            v-if="!propsComponent.item.expanded"
             @click="toggleExpanded"
             name="chevron_right"
             size="1.2rem"
@@ -153,7 +143,7 @@ watch(
 
       <template v-if="propsComponent.slotRender">
         <component
-          :is="{ render: () => propsComponent.slotRender!({ node: propsComponent.node }) }"
+          :is="{ render: () => propsComponent.slotRender!({ nodeItem: propsComponent.item }) }"
         />
       </template>
       <div v-else>
