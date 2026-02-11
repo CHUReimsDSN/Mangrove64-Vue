@@ -1,19 +1,19 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends TMangreove64NodeItemData">
 import { computed } from "vue";
-import type { TMangrove64TreeColumn, TNodeItem } from "../models";
+import type { TMangrove64TreeColumn, TMangrove64NodeItem, TMangreove64NodeItemData } from "../models";
 import type {
-  TTreeTableBorderStrategy,
-  TTreeTableSlot,
+  TMangrove64BorderStrategy,
+  TMangrove64Slot,
 } from "../private-models";
 
 // props
 const propsComponent = withDefaults(
   defineProps<{
-    item: TNodeItem;
-    column: TMangrove64TreeColumn;
+    item: TMangrove64NodeItem<T>;
+    column: TMangrove64TreeColumn<T>;
     cellCssClass: string | undefined;
-    borderStrategy: TTreeTableBorderStrategy;
-    slotRender: TTreeTableSlot | undefined;
+    borderStrategy: TMangrove64BorderStrategy;
+    slotRender: TMangrove64Slot<T> | undefined;
   }>(),
   {}
 );
@@ -21,11 +21,12 @@ const propsComponent = withDefaults(
 // computeds
 const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
-    return propsComponent.column.format(propsComponent.item);
+    return propsComponent.column.format(propsComponent.item.data);
   }
   if (propsComponent.column.fieldTarget) {
     return propsComponent.item.data[propsComponent.column.fieldTarget];
   }
+  return ''
 });
 const getcellCssClass = computed(() => {
   let classes = "mangrove64-cell";

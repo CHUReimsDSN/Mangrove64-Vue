@@ -1,15 +1,15 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends TMangreove64NodeItemData">
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
-import type { TMangrove64TreeColumn } from "../models";
-import type { TTreeTableBorderStrategy, TTreeTableTheme } from "../private-models";
+import type { TMangrove64TreeColumn, TMangreove64NodeItemData } from "../models";
+import type { TMangrove64BorderStrategy, TMangrove64Theme } from "../private-models";
 
 // props
 const propsComponent = defineProps<{
-  column: TMangrove64TreeColumn;
+  column: TMangrove64TreeColumn<T>;
   index: number;
   resizableColumns: boolean;
-  borderStrategy: TTreeTableBorderStrategy;
-  theme: TTreeTableTheme
+  borderStrategy: TMangrove64BorderStrategy;
+  theme: TMangrove64Theme
 }>();
 
 const thEl = ref<HTMLElement | null>(null);

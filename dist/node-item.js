@@ -1,39 +1,50 @@
-const fakeElementPrefix = "__mangrove64-fake-row-";
-function isLeaf(nodeItem) {
-    if (!nodeItem.dataHasChildrenKey) {
-        return false;
-    }
-    return Boolean(nodeItem.data[nodeItem.dataHasChildrenKey]) === false;
+const fakeElementPrefix = '__mangrove64-fake-row-';
+function getFakeDataKeyValue(nodeItem) {
+    return `${fakeElementPrefix}${String(nodeItem.dataIdentifierValue)}`;
 }
-function setLeaf(nodeItem, state) {
-    if (!nodeItem.dataHasChildrenKey) {
+function getDataChildren(nodeItem) {
+    if (!nodeItem.childrenKey) {
+        return [];
+    }
+    return (nodeItem.data[nodeItem.childrenKey] ?? []);
+}
+function setDataChildren(nodeItem, dataChildren) {
+    if (!nodeItem.childrenKey) {
         return;
     }
-    nodeItem.data[nodeItem.dataHasChildrenKey] = state;
+    nodeItem.data[nodeItem.childrenKey] = dataChildren;
 }
-function getDataKeyValue(nodeItem) {
-    return nodeItem.data[nodeItem.dataIdentifierKey].toString();
+function getParentKeyValue(nodeItem) {
+    if (!nodeItem.parentKey) {
+        return null;
+    }
+    return nodeItem.data[nodeItem.parentKey];
 }
-function getFakeDataKeyValue(nodeItem) {
-    return `${fakeElementPrefix}${getDataKeyValue(nodeItem).toString()}`;
+function setParentKeyValue(nodeItem, parentKeyValue) {
+    if (!nodeItem.parentKey) {
+        return;
+    }
+    nodeItem.data[nodeItem.parentKey] = parentKeyValue;
 }
-function getNodeOrder(nodeItem) {
+function getDataOrder(nodeItem) {
     if (!nodeItem.dataOrderKey) {
-        return 0;
+        return -1;
     }
     return nodeItem.data[nodeItem.dataOrderKey] ?? 0;
 }
-function getDataParentKeyValue(nodeItem) {
-    if (!nodeItem.parentKey) {
-        return '???';
+function setDataOrder(nodeItem, newOrder) {
+    if (!nodeItem.dataOrderKey) {
+        return;
     }
-    return nodeItem.data[nodeItem.parentKey].toString();
+    nodeItem.data[nodeItem.dataOrderKey] = newOrder;
 }
 export const NodeItemApi = {
-    isLeaf,
-    setLeaf,
-    getDataKeyValue,
     getFakeDataKeyValue,
-    getNodeOrder,
-    getDataParentKeyValue
+    getDataChildren,
+    setDataChildren,
+    getParentKeyValue,
+    setParentKeyValue,
+    getDataOrder,
+    setDataOrder,
+    fakeElementPrefix
 };

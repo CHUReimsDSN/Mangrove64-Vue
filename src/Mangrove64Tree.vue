@@ -1,40 +1,38 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends TMangreove64NodeItemData">
 import {
   computed,
   onMounted,
   ref,
   nextTick,
-  onScopeDispose,
   useSlots,
-  type Ref,
+  type UnwrapRef,
   type Slot,
 } from "vue";
 import TreeTableHeaderCell from "./components/TreeTableHeaderCell.vue";
 import TreeTableRow from "./components/TreeTableRow.vue";
 import TreeTableFakeRow from "./components/TreeTableFakeRow.vue";
-import Sortable, { MultiDrag, type Options } from "sortablejs";
 import type {
   TMangrove64TreeProps,
   TMangrove64TreeApi,
-  TMangrove64Emits,
-  TNodeItem,
-  TNodeItemData,
+  TMangrove64NodeItem,
+  TMangreove64NodeItemData,
+  TMangrove64NodeKeyValue
 } from "./models";
 import type {
-  TTreeTableHierarchy,
-  TTreeTableNodeKeyValue,
-  TTreeTableSlot,
-  TTreeTableTheme,
+  TMangrove64DragMode,
+  TMangrove64Hierarchy,
+  TMangrove64Slot,
+  TMangrove64Theme,
 } from "./private-models";
 import { NodeItemApi } from "./node-item";
 
 // props
-const propsComponent = withDefaults(defineProps<TMangrove64TreeProps>(), {
+const propsComponent = withDefaults(defineProps<TMangrove64TreeProps<T>>(), {
   draggable: false,
-  nodeKey: "id" as keyof T,
-  childrenKey: "children" as keyof T,
-  hasChildrenKey: "has_children" as keyof T,
-  parentKey: "parent_id" as keyof T,
+  nodeKey: "id",
+  childrenKey: "children",
+  hasChildrenKey: "has_children",
+  parentKey: "parent_id",
   expandeAllNodeAtStart: false,
   selectionMode: "unique",
   resizableColumns: false,
@@ -43,602 +41,361 @@ const propsComponent = withDefaults(defineProps<TMangrove64TreeProps>(), {
   tableCssClass: "",
   rowCssClass: "",
   cellCssClass: "",
-  nodeKeyType: "number",
   checkboxColor: "primary",
+  onNodeExpand: () => { },
+  onNodeCollapse: () => { },
+  onNodeSelect: () => { },
+  onNodeUnselect: () => { },
+  onLazyLoadChildren: () => { },
+  onNodesMove: () => { }
 });
 
-// emits
-const emitsComponent = defineEmits<TMangrove64Emits>();
-
 // slots
-defineSlots<Record<string, TTreeTableSlot>>();
+defineSlots<Record<string, TMangrove64Slot<T>>>();
 
-// vars
-let moveEventTargetAttribute: string | null = null;
+// lets
+let lastNodeItemIndexDragOver: number | null = null;
+let lastNodeItemModeDragOver: TMangrove64DragMode | null = null;
+let isDropping = false
 
 // consts
-const dataKeyAttribute = "data-key" as const;
-const fakeElementPrefix = "__mangrove64-fake-row-" as const;
-const rootHierarchyKey = "__mangrove64-null-hierarchy-key" as const;
 const slots = useSlots();
-const elementKeys: Map<TTreeTableNodeKeyValue, HTMLElement> = new Map();
+const dataKeyAttribute = "data-key" as const;
+const dropIndicatorCssClass = "mangrove64-drop-indicator" as const;
+const hierarchiKeys: Map<TMangrove64NodeKeyValue | null, TMangrove64Hierarchy> = new Map();
+const elementKeys: Map<string, HTMLElement> = new Map()
 
 // refs
-const nodeItems = ref<TNodeItem[]>([])
-const treeBodyEl = ref<HTMLElement | null>(null);
+const nodeItems = ref<TMangrove64NodeItem<T>[]>([])
 const isReady = ref(false);
 const isDragging = ref(false);
-const willInsertAfter = ref(false);
-const rerenderTrick = ref(0);
-const themeMode = ref<TTreeTableTheme>('light')
-
-// hooks
-const hook = useSortable(treeBodyEl);
+const draggingNodeItems = ref<TMangrove64NodeItem<T>[]>([])
+const themeMode = ref<TMangrove64Theme>('light')
+const mangrove64TableBody = ref<HTMLElement | null>(null)
 
 // functions
-function init() {
-  nodeItems.value = computedAllNodeItems(
-    propsComponent.nodes,
-    0,
-    rootHierarchyKey,
-    []
-  )[0]
-  hook.start();
-}
-function computedAllNodeItems(
-  nodes: TNodeItemData[],
-  level: number,
-  parent: TTreeTableHierarchy["parent"],
-  accumulator: TNodeItem[]
-): [TNodeItem[], TTreeTableNodeKeyValue[]] {
-  const nodeKeyValues: TTreeTableNodeKeyValue[] = [];
-  nodes.forEach((node) => {
-    const keyValue = node[propsComponent.nodeKey] as TTreeTableNodeKeyValue;
-    const nodeItem: TNodeItem = {
+function computeNodeItems(
+  nodes: T[],
+  accumulator: TMangrove64NodeItem<T>[]
+): TMangrove64NodeItem<T>[] {
+  for (const node of nodes) {
+    const keyValue = node[propsComponent.nodeKey] as TMangrove64NodeKeyValue;
+    let disabled = false
+    if (propsComponent.disabledKey) {
+      disabled = (node[propsComponent.disabledKey] ?? false) as boolean
+    }
+    const nodeItem: TMangrove64NodeItem<T> = {
       dataIdentifierValue: keyValue,
       dataIdentifierKey: propsComponent.nodeKey,
+      childrenKey: propsComponent.childrenKey,
       dataHasChildrenKey: propsComponent.hasChildrenKey,
       dataOrderKey: propsComponent.orderKey,
       parentKey: propsComponent.parentKey,
-      hierarchy: {
-        parent,
-        children: []
-      },
       index: 0,
       expanded: false,
       selected: false,
       level: 0,
       hidden: false,
       loading: false,
+      highlighted: false,
+      disabled: disabled,
+      isLeaf: node[propsComponent.hasChildrenKey] === true ? false : true,
       data: node
     }
     accumulator.push(nodeItem)
-    nodeItem.index = accumulator.length - 1
-    const childrens = (node[propsComponent.childrenKey] as TNodeItemData[]) ?? [];
-    const computedChild = computedAllNodeItems(
-      childrens,
-      level + 1,
-      keyValue,
+    const children = (node[propsComponent.childrenKey] as T[]) ?? [];
+    computeNodeItems(
+      children,
       accumulator
     )
-    nodeItem.hierarchy.children = computedChild[1]
-    accumulator = computedChild[0];
-  })
-  accumulator.sort((nodeA, nodeB) => {
-    return NodeItemApi.getNodeOrder(nodeB) - NodeItemApi.getNodeOrder(nodeA);
-  });
-  return [accumulator, nodeKeyValues];
+  }
+  return accumulator;
 }
-function useSortable(el: Ref<HTMLElement | null>) {
-  let sortable: Sortable | undefined;
-
-  const options: Options = {
-    multiDrag: true,
-    dataIdAttr: "node-key",
-    onStart: () => {
-      isDragging.value = true;
-    },
-    onEnd: async (event) => {
-      const nodeAttribute = event.item.getAttribute(dataKeyAttribute);
-      if (!nodeAttribute) {
-        isDragging.value = false;
-        return;
-      }
-      if (!selectedKeys.value.has(castAttributeToNodeKeyType(nodeAttribute))) {
-        isDragging.value = false;
-        return;
-      }
-      if (nodeAttribute.includes(fakeElementPrefix)) {
-        isDragging.value = false;
-        return;
-      }
-      if (!moveEventTargetAttribute) {
-        isDragging.value = false;
-        return;
-      }
-
-      // determine mode
-      const movingMode: "child-to-previous" | "brother-to-previous" =
-        moveEventTargetAttribute.includes(fakeElementPrefix)
-          ? "brother-to-previous"
-          : "child-to-previous";
-      const targetNodeKey = castAttributeToNodeKeyType(
-        moveEventTargetAttribute.replaceAll(fakeElementPrefix, "")
-      );
-      const targetHierarchy = hierarchiKeys.get(targetNodeKey);
-      if (!targetHierarchy) {
-        isDragging.value = false;
-        return;
-      }
-
-      // expand node if child
-      if (movingMode === 'child-to-previous') {
-        if (!expandedKeys.value.has(targetNodeKey)) {
-          const parentNodeIndex = indexKeys.get(targetNodeKey)
-          if (parentNodeIndex) {
-            const parentNode = nodesRef.value[parentNodeIndex]!
-            await onNodeExpandToggle(parentNode, true)
-          }
-        }
-      }
-
-      // update moving nodes hierarchy and levels
-      const emitNodesMoveData = {
-        nodesToMove: <T[]>[],
-        keyNewParent: <TTreeTableNodeKeyValue | null>null,
-        positionStartInParent: -1
-      }
-      let hasResetParentChildren = false;
-      const keys = [...selectedKeys.value]
-        .sort((selectedA, selectedB) => {
-          return (
-            (indexKeys.get(selectedA) ?? 0) - (indexKeys.get(selectedB) ?? 0)
-          );
-        })
-      for (const movingNodeKey of keys) {
-
-        const hierarchyMovingNode = hierarchiKeys.get(movingNodeKey);
-        if (!hierarchyMovingNode) {
-          return;
-        }
-
-        if (selectedKeys.value.has(hierarchyMovingNode.parent)) {
-          const levelMovingParent =
-            levelKeys.value.get(hierarchyMovingNode.parent) ?? -1;
-          levelKeys.value.set(movingNodeKey, levelMovingParent + 1);
-          return;
-        }
-
-        const oldParentHierarchy = hierarchiKeys.get(
-          hierarchyMovingNode.parent
-        );
-        if (oldParentHierarchy) {
-          oldParentHierarchy.children = oldParentHierarchy.children.filter(
-            (childFilter) => {
-              return childFilter !== movingNodeKey;
-            }
-          );
-        }
-
-        let newPositionInParent = -1;
-
-        if (movingMode === "brother-to-previous") {
-          hierarchyMovingNode.parent = targetHierarchy.parent;
-          const targetParentHierarchy = hierarchiKeys.get(
-            targetHierarchy.parent
-          );
-          if (targetParentHierarchy) {
-            newPositionInParent = targetParentHierarchy.children.findIndex(
-              (childFindIndex) => {
-                return childFindIndex === targetNodeKey;
-              }
-            );
-            if (newPositionInParent !== -1) {
-              newPositionInParent += 1;
-            }
-            targetParentHierarchy.children.splice(
-              newPositionInParent,
-              0,
-              movingNodeKey
-            );
-          }
-        } else if (movingMode === "child-to-previous") {
-          hierarchyMovingNode.parent = targetNodeKey;
-          const targetHierarchy = hierarchiKeys.get(targetNodeKey);
-          if (targetHierarchy) {
-            targetHierarchy.children.unshift(movingNodeKey);
-          }
-        }
-
-        // nodesref update
-        if ((newPositionInParent !== -1 && movingMode === 'brother-to-previous') || movingMode === 'child-to-previous') {
-          const keyNewParent =
-            hierarchyMovingNode.parent === rootHierarchyKey
-              ? null
-              : hierarchyMovingNode.parent;
-          const recursiveChildrenCount = getRecursiveChildrenCount(
-            movingNodeKey,
-            0
-          );
-          const nodeRefOldIndex = indexKeys.get(movingNodeKey) ?? 0;
-          const nodesRefToMove = nodesRef.value.splice(
-            nodeRefOldIndex,
-            recursiveChildrenCount + 1
-          );
-          computeIndexKeys();
-          const nodeRefNewIndex = indexKeys.get(targetNodeKey) ?? 0;
-          if (keyNewParent !== null) {
-            const parentNodeIndex = indexKeys.get(keyNewParent);
-            if (parentNodeIndex !== undefined) {
-              const parentNode = nodesRef.value[parentNodeIndex]!;
-              let parentChildren: T[] = [];
-              if (!hasResetParentChildren) {
-                parentChildren = [];
-                hasResetParentChildren = true;
-              } else {
-                parentChildren = parentChildren.concat(
-                  getNodeChildren(parentNode)
-                );
-              }
-              parentChildren.push(nodesRefToMove[0]!);
-              setNodeChildren(parentNode, parentChildren);
-              if (isNodeLeaf(parentNode)) {
-                setNodeLeaf(parentNode, false)
-              }
-            }
-          }
-          setNodeParent(nodesRefToMove[0]!, keyNewParent);
-          setNodeOrder(nodesRefToMove[0]!, newPositionInParent)
-          nodesRef.value.splice(nodeRefNewIndex + 1, 0, ...nodesRefToMove);
-          computeIndexKeys();
-          if (emitNodesMoveData.positionStartInParent === -1) {
-            emitNodesMoveData.positionStartInParent = willInsertAfter.value ? newPositionInParent + 2 : newPositionInParent + 1
-          }
-          emitNodesMoveData.keyNewParent = keyNewParent
-          emitNodesMoveData.nodesToMove.push(nodesRefToMove[0]!)
-        }
-      }
-
-      // trigger nodes-moves and purge inserted ones
-      if (emitNodesMoveData.nodesToMove.length > 0) {
-        await emitsComponent(
-          "nodes-move",
-          emitNodesMoveData.nodesToMove,
-          emitNodesMoveData.keyNewParent,
-          emitNodesMoveData.positionStartInParent,
-        );
-      }
-
-      // re-adjust fake rows
-      if (movingMode === "child-to-previous") {
-        const targetElementFake = elementKeys.get(
-          getElementFakeNodeKey(targetNodeKey)
-        );
-        if (targetElementFake && targetElementFake.parentElement) {
-          const parentElement = targetElementFake.parentElement;
-          parentElement.removeChild(targetElementFake);
-          parentElement.insertBefore(targetElementFake, event.item);
-        }
-      }
-
-      // end
-      isDragging.value = false;
-      moveEventTargetAttribute = null;
-      rerenderTrick.value++;
-      setTimeout(() => {
-        uniquizNodes();
-        elementKeys.clear();
-        setupElementsKeys(nodesRef.value);
-        hook.stop();
-        hook.start();
-        selectedKeys.value.forEach((selectedKey) => {
-          setSelectedKeys(selectedKey, true);
-        });
-      }, 50)
-    },
-    onSelect: (event) => {
-      const nodeKey = event.item.getAttribute(dataKeyAttribute);
-      if (!nodeKey) {
-        return false;
-      }
-      if (!selectedKeys.value.has(nodeKey)) {
-        Sortable.utils.deselect(event.item);
-      }
-    },
-    onDeselect: (event) => {
-      const nodeKey = event.item.getAttribute(dataKeyAttribute);
-      if (!nodeKey) {
-        return false;
-      }
-      if (selectedKeys.value.has(nodeKey)) {
-        Sortable.utils.select(event.item);
-      }
-    },
-    onMove: (event) => {
-      const nodeAttribute = event.dragged.getAttribute(dataKeyAttribute);
-      if (!nodeAttribute) {
-        return false;
-      }
-      if (!selectedKeys.value.has(castAttributeToNodeKeyType(nodeAttribute))) {
-        return false;
-      }
-      if (nodeAttribute.includes(fakeElementPrefix)) {
-        return false;
-      }
-
-      willInsertAfter.value = event.willInsertAfter ?? false
-
-      const targetAttribute = willInsertAfter.value
-        ? event.related.getAttribute(dataKeyAttribute)
-        : event.related.previousElementSibling?.getAttribute(dataKeyAttribute);
-      if (!targetAttribute) {
-        return false;
-      }
-      moveEventTargetAttribute = targetAttribute;
-
-      // determine mode
-      const movingMode: "child-to-previous" | "brother-to-previous" =
-        targetAttribute.includes(fakeElementPrefix)
-          ? "brother-to-previous"
-          : "child-to-previous";
-
-      const targetNodeKey =
-        movingMode === "child-to-previous" && willInsertAfter.value
-          ? castAttributeToNodeKeyType(targetAttribute)
-          : castAttributeToNodeKeyType(
-            targetAttribute.replaceAll(fakeElementPrefix, "")
-          );
-      const targetHierarchy = hierarchiKeys.get(targetNodeKey);
-
-      if (!targetHierarchy) {
-        return false;
-      }
-
-      // update levels
-      [...selectedKeys.value]
-        .sort((selectedA, selectedB) => {
-          return (
-            (indexKeys.get(selectedA) ?? 0) - (indexKeys.get(selectedB) ?? 0)
-          );
-        })
-        .forEach((movingNodeKey) => {
-          const hierarchyMovingNode = hierarchiKeys.get(movingNodeKey);
-          if (!hierarchyMovingNode) {
-            return;
-          }
-
-          const levelTargetKey = levelKeys.value.get(targetNodeKey) ?? 0;
-          if (movingMode === "brother-to-previous") {
-            levelKeys.value.set(movingNodeKey, levelTargetKey);
-          } else if (movingMode === "child-to-previous") {
-            levelKeys.value.set(movingNodeKey, levelTargetKey + 1);
-          }
-        });
-
-    },
-  };
-
-  const start = () => {
-    if (!propsComponent.draggable || el.value === null) {
-      return;
+function onDragStart(event: DragEvent) {
+  if (!propsComponent.draggable) {
+    return
+  }
+  isDragging.value = true;
+  draggingNodeItems.value = getSelectedNodeItems()
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'link'
+  }
+}
+function onDragEnter(event: DragEvent, nodeItemHovered: TMangrove64NodeItem<T>, mode: TMangrove64DragMode) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'link'
+  }
+  const targetHierarchy = hierarchiKeys.get(nodeItemHovered.dataIdentifierValue);
+  if (!targetHierarchy) {
+    return false;
+  }
+  if (draggingNodeItems.value.length === 0) {
+    return false;
+  }
+  if (lastNodeItemIndexDragOver !== null) {
+    const oldDragOverNodeItem = getNodeItemByIndex(lastNodeItemIndexDragOver)
+    let nodeItemHtmlElement: undefined | HTMLElement = undefined
+    if (lastNodeItemModeDragOver === 'brother') {
+      nodeItemHtmlElement = elementKeys.get(NodeItemApi.getFakeDataKeyValue(oldDragOverNodeItem))
     }
-    try {
-      Sortable.mount(new MultiDrag());
-    } catch {
-      // Can't unmount, either ignore the remount error, or have a Mangrove64.init()
+    if (lastNodeItemModeDragOver === 'child') {
+      nodeItemHtmlElement = elementKeys.get(String(oldDragOverNodeItem.dataIdentifierValue))
     }
-    sortable = new Sortable(el.value, { ...options });
-  };
-
-  const stop = () => {
-    if (!propsComponent.draggable) {
-      return;
+    if (nodeItemHtmlElement) {
+      nodeItemHtmlElement.classList.remove(dropIndicatorCssClass)
     }
-    sortable?.destroy();
-    sortable = undefined;
-  };
+  } else {
+    for (const nodeItem of draggingNodeItems.value) {
+      nodeItem.hidden = true
+    }
+  }
+  lastNodeItemModeDragOver = mode
+  lastNodeItemIndexDragOver = nodeItemHovered.index
+  const oldDragOverNodeItem = getNodeItemByIndex(lastNodeItemIndexDragOver)
+  let nodeItemHtmlElement: undefined | HTMLElement = undefined
+  if (mode === 'brother') {
+    nodeItemHtmlElement = elementKeys.get(NodeItemApi.getFakeDataKeyValue(oldDragOverNodeItem))
+  }
+  if (mode === 'child') {
+    nodeItemHtmlElement = elementKeys.get(String(oldDragOverNodeItem.dataIdentifierValue))
+  }
+  if (nodeItemHtmlElement) {
+    nodeItemHtmlElement.classList.add(dropIndicatorCssClass)
+  }
+}
+async function onDragDrop(event: DragEvent) {
+  // setup
+  event.preventDefault()
+  isDropping = true
+  if (!isDragging.value) {
+    endDragMode()
+    return
+  }
+  if (lastNodeItemIndexDragOver === null) {
+    endDragMode()
+    return
+  }
+  if (lastNodeItemModeDragOver === null) {
+    endDragMode()
+    return
+  }
+  const nodeTarget = getNodeItemByIndex(lastNodeItemIndexDragOver)
+  if (nodeTarget.disabled) {
+    endDragMode()
+    return
+  }
+  const nodeTargetHierarchy = hierarchiKeys.get(nodeTarget.dataIdentifierValue)
+  if (!nodeTargetHierarchy) {
+    endDragMode()
+    return
+  }
 
-  return {
-    stop,
-    start,
-  };
+  // // expand node if child
+  if (lastNodeItemModeDragOver === 'child' && nodeTarget.expanded === false) {
+    await onNodeExpandToggle(nodeTarget, true)
+  }
+
+  // update moving nodes levels, data parent and splice old indexes and old parents
+  let keyNewParent: TMangrove64NodeKeyValue | null = null;
+  if (lastNodeItemModeDragOver === 'brother') {
+    keyNewParent = NodeItemApi.getParentKeyValue(nodeTarget)
+  } else if (lastNodeItemModeDragOver === 'child') {
+    keyNewParent = nodeTarget.dataIdentifierValue
+  }
+  let relativePositionInParent = 0;
+  if (lastNodeItemModeDragOver === 'brother') {
+    relativePositionInParent = NodeItemApi.getDataOrder(nodeTarget) + 1
+  } else if (lastNodeItemModeDragOver === 'child') {
+    const parentNodeTargetHierarchy = hierarchiKeys.get(keyNewParent)
+    if (parentNodeTargetHierarchy && parentNodeTargetHierarchy.childrenIndex.length > 0) {
+      relativePositionInParent = NodeItemApi.getDataOrder(getNodeItemByIndex(parentNodeTargetHierarchy.childrenIndex[0]!))
+    }
+  }
+  const nodesToMoveForReal: UnwrapRef<TMangrove64NodeItem<T>>[] = []
+
+  for (let i = 0; i < draggingNodeItems.value.length; i++) {
+    const draginNodeItem = draggingNodeItems.value[i]!
+    draginNodeItem.hidden = false
+    const isParentIsDraginList = draggingNodeItems.value.findIndex((draginParentFind) => {
+      return draginParentFind.dataIdentifierValue === NodeItemApi.getParentKeyValue(draginNodeItem)
+    }) !== -1
+    if (isParentIsDraginList) {
+      continue
+    }
+    if (lastNodeItemModeDragOver === 'brother') {
+      draginNodeItem.level = nodeTarget.level
+    } else if (lastNodeItemModeDragOver === 'child') {
+      draginNodeItem.level = nodeTarget.level + 1
+    }
+    NodeItemApi.setDataOrder(draginNodeItem, relativePositionInParent - draggingNodeItems.value.length + i)
+    const oldParentIndex = hierarchiKeys.get(draginNodeItem.dataIdentifierValue)?.parentIndex
+    if (oldParentIndex !== undefined && oldParentIndex !== null) {
+      const oldParentNode = getNodeItemByIndex(oldParentIndex)
+      let newDataChildren = NodeItemApi.getDataChildren(oldParentNode)
+      newDataChildren = newDataChildren.filter((dataChild) => {
+        return dataChild[propsComponent.nodeKey] !== draginNodeItem.dataIdentifierValue
+      })
+      NodeItemApi.setDataChildren(oldParentNode, newDataChildren)
+    }
+    NodeItemApi.setParentKeyValue(draginNodeItem, keyNewParent)
+    nodesToMoveForReal.push(draginNodeItem)
+    const deepChildCount = getRecursiveChildrenCount(draginNodeItem as TMangrove64NodeItem<T>, 0)
+    nodeItems.value.splice(draginNodeItem.index, 1 + deepChildCount)
+  }
+
+  // inject all nodes in new parent at right position
+  if (lastNodeItemModeDragOver === 'child') {
+    const newDataChildren = NodeItemApi.getDataChildren(nodeTarget)
+    newDataChildren.push(...nodesToMoveForReal.map((nodeToMove) => {
+      return nodeToMove.data as T
+    }))
+    NodeItemApi.setDataChildren(nodeTarget, newDataChildren)
+    nodeTarget.isLeaf = false
+  }
+  if (lastNodeItemModeDragOver === 'brother') {
+    const targetNodeParentIndex = hierarchiKeys.get(nodeTarget.dataIdentifierValue)?.parentIndex
+    if (targetNodeParentIndex !== undefined && targetNodeParentIndex !== null) {
+      const targetNodeParentNode = getNodeItemByIndex(targetNodeParentIndex)
+      const newdataChildren = NodeItemApi.getDataChildren(targetNodeParentNode)
+      newdataChildren.push(...nodesToMoveForReal.map((nodeToMove) => {
+        return nodeToMove.data as T
+      }))
+      NodeItemApi.setDataChildren(targetNodeParentNode, newdataChildren)
+    }
+  }
+  nodeItems.value.splice(nodeTarget.index + 1, 0, ...draggingNodeItems.value)
+
+  // finish
+  lastNodeItemIndexDragOver = nodeTarget.index
+  endDragMode()
+  computeAllOrderAndLevelAndIndexeAndHierarchyAndElements()
+  await propsComponent.onNodesMove(
+    nodesToMoveForReal as TMangrove64NodeItem<T>[],
+  );
+}
+function onDragEnd(_event: DragEvent) {
+  if (isDropping || !isDragging.value) {
+    return
+  }
+  endDragMode()
+}
+function endDragMode() {
+  isDragging.value = false;
+  isDropping = false;
+  for (const draginItem of draggingNodeItems.value) {
+    const linkedNode = getNodeItemByIndex(draginItem.index)
+    linkedNode.hidden = false
+  }
+  if (lastNodeItemIndexDragOver !== null) {
+    const oldNideItemDragOver = getNodeItemByIndex(lastNodeItemIndexDragOver)
+    let nodeItemHtmlElement: HTMLElement | undefined = undefined
+    if (lastNodeItemModeDragOver === 'brother') {
+      nodeItemHtmlElement = elementKeys.get(NodeItemApi.getFakeDataKeyValue(oldNideItemDragOver))
+    }
+    if (lastNodeItemModeDragOver === 'child') {
+      nodeItemHtmlElement = elementKeys.get(String(oldNideItemDragOver.dataIdentifierValue))
+    }
+    if (nodeItemHtmlElement) {
+      nodeItemHtmlElement.classList.remove(dropIndicatorCssClass)
+    }
+  }
+  draggingNodeItems.value = []
+  lastNodeItemIndexDragOver = null
+  lastNodeItemModeDragOver = null
 }
 function getRecursiveChildrenCount(
-  nodeKey: TTreeTableNodeKeyValue,
+  nodeItem: TMangrove64NodeItem<T>,
   accumulator: number
 ) {
-  const hierarchyNode = hierarchiKeys.get(nodeKey);
+  const hierarchyNode = hierarchiKeys.get(nodeItem.dataIdentifierValue);
   if (!hierarchyNode) {
     return accumulator;
   }
-  hierarchyNode.children.forEach((childKey) => {
+  for (const childIndex of hierarchyNode.childrenIndex) {
     accumulator++;
-    accumulator = getRecursiveChildrenCount(childKey, accumulator);
-  });
+    const childNodeItem = getNodeItemByIndex(childIndex)
+    accumulator = getRecursiveChildrenCount(childNodeItem, accumulator);
+  };
   return accumulator;
 }
-
-function computeIndexKeys() {
-  indexKeys.clear();
-  nodesRef.value.forEach((node, nodeIndex) => {
-    const nodeKey = getNodeKeyValue(node);
-    indexKeys.set(nodeKey, nodeIndex);
-  });
+function getNodeItemByIndex(index: number) {
+  return nodeItems.value[index] as TMangrove64NodeItem<T>
 }
-function setupElementsKeys(nodeItems: TNodeItem[]) {
-  if (!treeBodyEl.value) {
-    return;
-  }
-  const allRowElement = [
-    ...treeBodyEl.value.querySelectorAll(".mangrove64-row"),
-  ];
-  nodeItems.forEach((node) => {
-    const nodeKeyValue = NodeItemApi.getDataKeyValue(node)
-    const rowElement = allRowElement.find((rowElementFind) => {
-      const attribute = rowElementFind.getAttribute(dataKeyAttribute);
-      return castAttributeToNodeKeyType(attribute) === nodeKeyValue;
-    });
-    if (!rowElement) {
-      return;
-    }
-    elementKeys.set(nodeKeyValue, rowElement as HTMLElement);
-
-    const fakeRowElement = allRowElement.find((rowElementFind) => {
-      const attribute = rowElementFind.getAttribute(dataKeyAttribute);
-      return attribute?.toString() === getElementFakeNodeKey(nodeKeyValue);
-    });
-    if (!fakeRowElement) {
-      return;
-    }
-    elementKeys.set(
-      getElementFakeNodeKey(nodeKeyValue),
-      fakeRowElement as HTMLElement
-    );
-  });
-}
-function castAttributeToNodeKeyType(
-  attribute: string | null
-): TTreeTableNodeKeyValue {
-  switch (propsComponent.nodeKeyType) {
-    case "string":
-      return attribute ?? String();
-    case "symbol":
-      return Symbol(attribute?.toString());
-    case "number":
-      return Number(attribute);
-  }
-}
-function setSelectedKeys(nodeKey: TTreeTableNodeKeyValue, state: boolean) {
-  if (state) {
-    selectedKeys.value.add(nodeKey);
-    const element = elementKeys.get(nodeKey);
-    const fakeElement = elementKeys.get(getElementFakeNodeKey(nodeKey));
-    if (element && fakeElement && propsComponent.draggable) {
-      Sortable.utils.select(element);
-      Sortable.utils.select(fakeElement);
-    }
-  } else {
-    selectedKeys.value.delete(nodeKey);
-    const element = elementKeys.get(nodeKey);
-    const fakeElement = elementKeys.get(getElementFakeNodeKey(nodeKey));
-    if (element && fakeElement && propsComponent.draggable) {
-      Sortable.utils.deselect(element);
-      Sortable.utils.deselect(fakeElement);
+function clearSelectedNode() {
+  for (const nodeItem of getSelectedNodeItems()) {
+    if (nodeItem.selected) {
+      nodeItem.selected = false
     }
   }
 }
-function clearSelectedKeys() {
-  selectedKeys.value.forEach((selectedKey) => {
-    const rowElement = elementKeys.get(selectedKey);
-    if (rowElement) {
-      Sortable.utils.deselect(rowElement);
-    }
-  });
-  selectedKeys.value.clear();
-}
-function onNodeClick(node: T) {
-  let emitCallback: () => void = () => {
-    return;
-  };
-  const nodeKey = getNodeKeyValue(node);
+async function onNodeClick(nodeItem: TMangrove64NodeItem<T>) {
   switch (propsComponent.selectionMode) {
     case "unique":
-      clearSelectedKeys();
-      setSelectedKeys(nodeKey, true);
-      emitCallback = () => emitsComponent("node-select", node);
+      if (nodeItem.selected) {
+        clearSelectedNode();
+        await propsComponent.onNodeUnselect(nodeItem)
+      } else {
+        clearSelectedNode();
+        nodeItem.selected = true
+        await propsComponent.onNodeSelect(nodeItem)
+      }
       break;
 
     case "multiple": {
-      const state = selectedKeys.value.has(nodeKey);
-      if (state) {
-        setSelectedKeys(nodeKey, false);
-        emitCallback = () => emitsComponent("node-unselect", node);
+      if (nodeItem.selected) {
+        nodeItem.selected = false
+        await propsComponent.onNodeUnselect(nodeItem)
       } else {
-        setSelectedKeys(nodeKey, true);
-        const parentNodeKey = hierarchiKeys.get(nodeKey)?.parent;
-        if (parentNodeKey) {
-          setSelectedKeys(parentNodeKey, state);
-        }
-        emitCallback = () => emitsComponent("node-select", node);
+        nodeItem.selected = true
+        await propsComponent.onNodeSelect(nodeItem)
       }
-      propagateSelectionDown(nodeKey, state);
+      propagateSelectionDown(nodeItem, !nodeItem.selected);
       break;
     }
 
     case "checkbox":
       return;
   }
-  emitCallback();
 }
-async function lazyLoad(node: T) {
-  const nodeKey = getNodeKeyValue(node);
-  loadingKeys.value.add(nodeKey);
+async function lazyLoad(nodeItem: TMangrove64NodeItem<T>) {
+  nodeItem.loading = true
   const doneCallback = (newChildrenNode: T[]) => {
-    const targetIndex = indexKeys.get(nodeKey);
-    if (targetIndex === undefined) {
-      return;
+    const computedNodeItem = computeNodeItems(newChildrenNode, [])
+    NodeItemApi.setDataChildren(nodeItem, newChildrenNode)
+    nodeItems.value.splice(nodeItem.index + 1, 0, ...computedNodeItem as UnwrapRef<TMangrove64NodeItem<T>>[]);
+    computeAllOrderAndLevelAndIndexeAndHierarchyAndElements()
+    if (nodeItem.selected) {
+      propagateSelectionDown(nodeItem, true);
     }
-    const oldHierarchy = hierarchiKeys.get(nodeKey);
-    hierarchiKeys.set(nodeKey, {
-      parent: oldHierarchy?.parent ?? rootHierarchyKey,
-      children: newChildrenNode.sort((nodeA, nodeB) => {
-        return getNodeOrder(nodeB) - getNodeOrder(nodeA);
-      }).map((childNode) => {
-        return getNodeKeyValue(childNode);
-      }),
-    });
-    const nodeLevel = levelKeys.value.get(nodeKey) ?? 0;
-    newChildrenNode.forEach((childNode) => {
-      const childNodeKey = getNodeKeyValue(childNode);
-      hierarchiKeys.set(childNodeKey, {
-        parent: nodeKey,
-        children: [],
-      });
-      levelKeys.value.set(childNodeKey, nodeLevel + 1);
-    });
-    const allChildrenNode = [...getNodeChildren(node), ...newChildrenNode].filter((nodeFilter, indexFilter, arrayFilter) => {
-      return arrayFilter.map((nodeMap) => {
-        return getNodeKeyValue(nodeMap)
-      }).indexOf(getNodeKeyValue(nodeFilter)) === indexFilter
-    })
-    setNodeChildren(node, allChildrenNode);
-    nodesRef.value.splice(targetIndex + 1, 0, ...allChildrenNode);
-    computeIndexKeys();
-    void nextTick(() => {
-      setupElementsKeys(allChildrenNode);
-      if (selectedKeys.value.has(nodeKey)) {
-        setSelectedKeys(nodeKey, true);
-        propagateSelectionDown(nodeKey, true);
-      }
-      loadingKeys.value.delete(nodeKey);
-    });
+    nodeItem.loading = false
   };
-  await emitsComponent("lazy-load-children", {
-    nodeItem: node,
-    nodeKey: nodeKey,
-    done: doneCallback,
-  });
+  await propsComponent.onLazyLoadChildren(
+    nodeItem,
+    nodeItem.dataIdentifierValue,
+    doneCallback,
+  );
 }
-async function onNodeExpandToggle(node: T, state: boolean) {
+async function onNodeExpandToggle(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
   if (state) {
-    expandedKeys.value.add(getNodeKeyValue(node));
-    emitsComponent("node-expand", node);
-    if (isNodeLeaf(node)) {
+    nodeItem.expanded = true
+    await propsComponent.onNodeExpand(nodeItem)
+    if (nodeItem.isLeaf) {
       return;
     }
-    if (getNodeChildren(node).length > 0) {
-      const hierarchy = getNodeHierarchy(node);
+    if (NodeItemApi.getDataChildren(nodeItem).length > 0) {
+      const hierarchy = hierarchiKeys.get(nodeItem.dataIdentifierValue)
       if (!hierarchy) {
         return;
       }
       setChildrenHideState(hierarchy, false, false);
     } else {
-      await lazyLoad(node)
+      await lazyLoad(nodeItem)
     }
   } else {
-    expandedKeys.value.delete(getNodeKeyValue(node));
-    emitsComponent("node-collapse", node);
-    const hierarchy = getNodeHierarchy(node);
+    nodeItem.expanded = false
+    await propsComponent.onNodeCollapse(nodeItem)
+    const hierarchy = hierarchiKeys.get(nodeItem.dataIdentifierValue)
     if (!hierarchy) {
       return;
     }
@@ -646,145 +403,235 @@ async function onNodeExpandToggle(node: T, state: boolean) {
   }
 }
 function setChildrenHideState(
-  hierarchy: TTreeTableHierarchy,
+  hierarchy: TMangrove64Hierarchy,
   state: boolean,
   deep: boolean
 ) {
-  hierarchy.children.forEach((childHierarchyKey) => {
+  for (const childIndex of hierarchy.childrenIndex) {
+    const childNodeItem = getNodeItemByIndex(childIndex)
     if (state) {
-      hiddenKeys.value.add(childHierarchyKey);
-      setSelectedKeys(childHierarchyKey, !state);
+      childNodeItem.hidden = true
+      childNodeItem.selected = false
     } else {
-      hiddenKeys.value.delete(childHierarchyKey);
+      childNodeItem.hidden = false
     }
     if (deep) {
-      const childHierarchy = hierarchiKeys.get(childHierarchyKey);
+      const childHierarchy = hierarchiKeys.get(childNodeItem.dataIdentifierValue);
       if (childHierarchy) {
         setChildrenHideState(childHierarchy, state, deep);
       }
     }
-  });
+  }
 }
-function onNodeCheckboxToggle(node: T, state: boolean) {
-  let emitCallback: () => void = () => {
-    return;
-  };
-  const nodeKey = getNodeKeyValue(node);
+async function onNodeCheckboxToggle(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
   switch (propsComponent.selectionMode) {
     case "checkbox":
+      nodeItem.selected = state
       if (state) {
-        setSelectedKeys(nodeKey, state);
-        emitCallback = () => emitsComponent("node-select", node);
+        await propsComponent.onNodeSelect(nodeItem)
       } else {
-        setSelectedKeys(nodeKey, state);
-        propagateSelectionUp(nodeKey, state)
-        emitCallback = () => emitsComponent("node-unselect", node);
+        propagateSelectionUp(nodeItem, state)
+        await propsComponent.onNodeUnselect(nodeItem)
       }
-      propagateSelectionDown(nodeKey, state);
+      propagateSelectionDown(nodeItem, state);
       break;
 
     case "multiple":
     case "unique":
       return;
   }
-  emitCallback();
 }
-function propagateSelectionDown(nodeKey: TTreeTableNodeKeyValue, state: boolean) {
-  const hierarchy = hierarchiKeys.get(nodeKey);
+function propagateSelectionDown(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
+  const hierarchy = hierarchiKeys.get(nodeItem.dataIdentifierValue);
   if (!hierarchy) {
     return;
   }
-  hierarchy.children.forEach((childNodeKey) => {
-    setSelectedKeys(childNodeKey, state);
-    propagateSelectionDown(childNodeKey, state);
-  });
+  for (const childNodeIndex of hierarchy.childrenIndex) {
+    const childNodeItem = getNodeItemByIndex(childNodeIndex)
+    childNodeItem.selected = state
+    propagateSelectionDown(childNodeItem, state);
+  }
 }
-function propagateSelectionUp(nodeKey: TTreeTableNodeKeyValue, state: boolean) {
-  const hierarchy = hierarchiKeys.get(nodeKey);
+function propagateSelectionUp(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
+  const hierarchy = hierarchiKeys.get(nodeItem.dataIdentifierValue);
   if (!hierarchy) {
     return;
   }
-  setSelectedKeys(hierarchy.parent, state);
-  if (hierarchy.parent === rootHierarchyKey) {
-    return
+  if (hierarchy.parentIndex) {
+    const parentNodeItem = getNodeItemByIndex(hierarchy.parentIndex)
+    parentNodeItem.selected = state
+    propagateSelectionUp(parentNodeItem, state);
   }
-  propagateSelectionUp(hierarchy.parent, state);
 }
-function getNodeItemByKey(nodeDataKey: TTreeTableNodeKeyValue) {
-  return nodeItems.value.find((node) => {
-    return NodeItemApi.getDataKeyValue(node) === nodeDataKey;
-  });
-}
-function updateNode(nodeData: TNodeItemData) {
-  console.log('yoo')
-  // TODO
-}
-function addNode(
-  nodeData: TNodeItemData,
-) {
-  const keyValue = nodeData[propsComponent.nodeKey] as TTreeTableNodeKeyValue
-  const parentKeyValue = nodeData[propsComponent.parentKey] as TTreeTableNodeKeyValue
-  const childrenKeyValue = ((nodeData[propsComponent.childrenKey] as TNodeItemData[]) ?? []).map((childMap) => {
-    return childMap[propsComponent.nodeKey] as TTreeTableNodeKeyValue
-  })
-  const parentNodeItem = nodeItems.value.find((nodeItem) => {
-    return NodeItemApi.getDataKeyValue(nodeItem) === parentKeyValue
-  })
-  const nodeItem: TNodeItem = {
-    dataIdentifierValue: keyValue,
-    dataIdentifierKey: propsComponent.nodeKey,
-    dataHasChildrenKey: propsComponent.hasChildrenKey,
-    dataOrderKey: propsComponent.orderKey,
-    parentKey: propsComponent.parentKey,
-    hierarchy: {
-      parent: parentKeyValue,
-      children: childrenKeyValue
-    },
-    index: (parentNodeItem?.index ?? 0),
-    expanded: false,
-    selected: false,
-    level: (parentNodeItem?.level ?? 0) + 1,
-    hidden: false,
-    loading: false,
-    data: nodeData
-  }
-  
-  // TODO finir, compute children aussi, splice la liste pour ajouter
-
-  if (parentNodeItem) {
-    parentNodeItem.hierarchy.children.push(keyValue)
-  }
-  void nextTick(() => {
-    setupElementsKeys([nodeItem]);
-  })
-}
-function removeNode(nodeKeyValue: TTreeTableNodeKeyValue) {
-  const indexesToRemove: number[] = []
-  nodeItems.value.forEach((nodeItem, nodeItemIndex) => {
-    const keyValue = NodeItemApi.getDataKeyValue(nodeItem)
-    if (nodeItem.hierarchy.parent === nodeKeyValue) {
-      nodeItem.hierarchy.parent = rootHierarchyKey
+function computeAllOrderAndLevelAndIndexeAndHierarchyAndElements() {
+  const mapParentKeyChildRef = new Map<TMangrove64NodeKeyValue | null, TMangrove64NodeItem<T>[]>()
+  for (const nodeItem of nodeItems.value) {
+    const parentKeyValue = NodeItemApi.getParentKeyValue(nodeItem)
+    const mapParentEntry = mapParentKeyChildRef.get(parentKeyValue)
+    if (!mapParentEntry) {
+      mapParentKeyChildRef.set(parentKeyValue, [nodeItem as TMangrove64NodeItem<T>])
+    } else {
+      mapParentEntry.push(nodeItem as TMangrove64NodeItem<T>)
     }
-    nodeItem.hierarchy.children = nodeItem.hierarchy.children.filter((childrenFilter) => {
-      return childrenFilter !== nodeKeyValue
+  }
+  for (const childrenNodeItem of mapParentKeyChildRef.values()) {
+    childrenNodeItem.sort((nodeA, nodeB) => {
+      return NodeItemApi.getDataOrder(nodeA) - NodeItemApi.getDataOrder(nodeB)
     })
-    if (keyValue === nodeKeyValue) {
-      indexesToRemove.push(nodeItemIndex)
+  }
+  const fillNewNodeItemsCallback = (parentKeyValue: TMangrove64NodeKeyValue | null, parentLevel: number, accumulator: TMangrove64NodeItem<T>[], mapKeyIndexAccumulator: Map<TMangrove64NodeKeyValue | null, number>) => {
+    const childrenNodes = mapParentKeyChildRef.get(parentKeyValue)
+    if (!childrenNodes) {
+      return accumulator
+    }
+    for (const child of childrenNodes) {
+      child.level = parentLevel + 1
+      const indexAlreadyIn = mapKeyIndexAccumulator.get(child.dataIdentifierValue)
+      if (indexAlreadyIn !== undefined) {
+        accumulator[indexAlreadyIn] = child
+      } else {
+        accumulator.push(child)
+      }
+      mapKeyIndexAccumulator.set(child.dataIdentifierValue, accumulator.length - 1)
+      fillNewNodeItemsCallback(child.dataIdentifierValue, parentLevel + 1, accumulator, mapKeyIndexAccumulator)
+    }
+    return accumulator
+  }
+  const newNodeItems = fillNewNodeItemsCallback(null, -1, [], new Map())
+
+  hierarchiKeys.clear();
+  const mapKeyIndex = new Map<TMangrove64NodeKeyValue, number>()
+  for (let i = 0; i < newNodeItems.length; i++) {
+    const nodeItem = newNodeItems[i]!
+    mapKeyIndex.set(nodeItem.dataIdentifierValue, i)
+    nodeItem.index = i
+    const parentKeyValue = NodeItemApi.getParentKeyValue(nodeItem)
+    let nodeHierarchy = hierarchiKeys.get(nodeItem.dataIdentifierValue)
+    if (!nodeHierarchy) {
+      nodeHierarchy = {
+        parentIndex: null,
+        childrenIndex: []
+      }
+    }
+    let parentIndex = null
+    if (parentKeyValue !== null) {
+      parentIndex = mapKeyIndex.get(parentKeyValue) ?? null
+    }
+    nodeHierarchy.parentIndex = parentIndex
+    hierarchiKeys.set(nodeItem.dataIdentifierValue, nodeHierarchy)
+
+    if (parentIndex !== null) {
+      const parentNodeItem = getNodeItemByIndex(parentIndex)
+      let parentNodeHierarchy = hierarchiKeys.get(parentNodeItem.dataIdentifierValue)
+      if (!parentNodeHierarchy) {
+        parentNodeHierarchy = {
+          parentIndex: null,
+          childrenIndex: []
+        }
+      }
+      parentNodeHierarchy.childrenIndex.push(i)
+      hierarchiKeys.set(parentNodeItem.dataIdentifierValue, parentNodeHierarchy)
+    }
+  }
+  nodeItems.value = newNodeItems
+
+  void nextTick(() => {
+    if (!mangrove64TableBody.value) {
+      return
+    }
+    elementKeys.clear()
+    const rowElements = Array.from(mangrove64TableBody.value.querySelectorAll(".mangrove64-row"))
+    for (const rowElement of rowElements) {
+      const rowDataKeyValue = rowElement.getAttribute(dataKeyAttribute)
+      if (!rowDataKeyValue) {
+        continue
+      }
+      elementKeys.set(rowDataKeyValue, rowElement as HTMLElement)
     }
   })
-  indexesToRemove.forEach((index) => {
-    nodeItems.value.splice(index, 1)
-  })
 }
-function getSelectedKeys() {
+function getNodeItemByKeyValue(nodeKeyValue: TMangrove64NodeKeyValue) {
+  return nodeItems.value.find((nodeItem) => {
+    return nodeItem.dataIdentifierValue === nodeKeyValue;
+  }) as TMangrove64NodeItem<T> | undefined;
+}
+function updateNodes(nodesData: T[]) {
+  for (const node of nodesData) {
+    const keyValue = node[propsComponent.nodeKey] as TMangrove64NodeKeyValue
+    const nodeItem = getNodeItemByKeyValue(keyValue)
+    if (!nodeItem) {
+      continue;
+    }
+    nodeItem.data = node
+  }
+  computeAllOrderAndLevelAndIndexeAndHierarchyAndElements()
+}
+function setNodes(nodes: T[]) {
+  nodeItems.value = computeNodeItems(
+    nodes,
+    []
+  )
+  computeAllOrderAndLevelAndIndexeAndHierarchyAndElements()
+}
+async function addNodes(
+  nodes: T[],
+) {
+  const computedNodeItem = computeNodeItems(nodes, [])
+  for (const nodeItem of computedNodeItem) {
+    nodeItems.value.splice(nodeItem.index + 1, 0, ...computedNodeItem as UnwrapRef<TMangrove64NodeItem<T>>[]);
+    computeAllOrderAndLevelAndIndexeAndHierarchyAndElements()
+    const hierarchy = hierarchiKeys.get(nodeItem.dataIdentifierValue)
+    if (hierarchy && hierarchy.parentIndex !== null) {
+      const parentNode = getNodeItemByIndex(hierarchy.parentIndex)
+      if (parentNode.expanded === false) {
+        await onNodeExpandToggle(parentNode, true)
+      }
+      const parentDataChildren = NodeItemApi.getDataChildren(parentNode)
+      parentDataChildren.push(nodeItem.data)
+      NodeItemApi.setDataChildren(parentNode, parentDataChildren)
+      if (parentNode.isLeaf) {
+        parentNode.isLeaf = false
+      }
+      if (parentNode.selected) {
+        propagateSelectionDown(parentNode, true);
+      }
+    }
+  }
+}
+function removeNodes(keyValues: TMangrove64NodeKeyValue[]) {
+  nodeItems.value = nodeItems.value.filter((nodeItem) => {
+    return !keyValues.includes(nodeItem.dataIdentifierValue)
+  })
+  computeAllOrderAndLevelAndIndexeAndHierarchyAndElements()
+}
+function highlightNodes(keyValues: TMangrove64NodeKeyValue[]) {
+  const nodeItemsFound = nodeItems.value.filter((nodeItem) => {
+    return keyValues.includes(nodeItem.dataIdentifierValue)
+  })
+  for (const nodeItem of nodeItemsFound) {
+    nodeItem.highlighted = true
+    setTimeout(() => {
+      nodeItem.highlighted = false
+    }, 11000)
+  }
+}
+function expandNodes(keyValues: TMangrove64NodeKeyValue[]) {
+  const nodeItemsFound = nodeItems.value.filter((nodeItem) => {
+    return keyValues.includes(nodeItem.dataIdentifierValue)
+  })
+  for (const nodeItem of nodeItemsFound) {
+    onNodeExpandToggle(nodeItem as TMangrove64NodeItem<T>, true)
+  }
+}
+function getSelectedNodeItems() {
   return nodeItems.value.filter((nodeItem) => {
     return nodeItem.selected
-  })
+  }) as TMangrove64NodeItem<T>[]
 }
-function getExpandedNodeItem() {
+function getExpandedNodeItems() {
   return nodeItems.value.filter((nodeItem) => {
     return nodeItem.expanded
-  })
+  }) as TMangrove64NodeItem<T>[]
 }
 function setupThemeMode() {
   if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -810,26 +657,25 @@ const slotMap = computed(() => {
 });
 
 // exposes
-defineExpose<TMangrove64TreeApi>({
-  getSelectedKeys,
-  getExpandedNodeItem,
-  getNodeItemByKey,
-  updateNode,
-  addNode,
-  removeNode,
+defineExpose<TMangrove64TreeApi<T>>({
+  getSelectedNodeItems,
+  getExpandedNodeItems,
+  getNodeItemByKeyValue,
+  updateNodes,
+  addNodes,
+  setNodes,
+  removeNodes,
+  highlightNodes,
+  expandNodes
 });
 
 // lifeCycle
 onMounted(() => {
   setupThemeMode();
-  init();
+  setNodes(propsComponent.nodes)
   void nextTick(() => {
-    setupElementsKeys(nodeItems.value);
     isReady.value = true;
   });
-});
-onScopeDispose(() => {
-  hook.stop();
 });
 </script>
 
@@ -845,18 +691,21 @@ onScopeDispose(() => {
             </template>
           </tr>
         </thead>
-        <tbody ref="treeBodyEl" :key="rerenderTrick">
+        <tbody ref="mangrove64TableBody" @drop="onDragDrop">
           <template v-for="item in nodeItems" :key="item.dataIdentifierKey">
-            <TreeTableRow :item="item" :columns="propsComponent.columns" :selectionMode="propsComponent.selectionMode"
+            <TreeTableRow :item="(item as TMangrove64NodeItem<T>)" :columns="propsComponent.columns"
+              :selectionMode="propsComponent.selectionMode" :indentationPx="propsComponent.indentationPx"
+              :row-css-class="propsComponent.rowCssClass" :cell-css-class="propsComponent.cellCssClass"
+              :border-strategy="propsComponent.borderStrategy" :slot-map="slotMap" :theme="themeMode"
+              :draggable="propsComponent.draggable" :checkbox-color="propsComponent.checkboxColor"
+              @node-expand-toggle="onNodeExpandToggle" @node-checkbox-toggle="onNodeCheckboxToggle"
+              @node-click="onNodeClick" @onDragStart="onDragStart" @onDragEnter="onDragEnter" @onDragEnd="onDragEnd" />
+            <TreeTableFakeRow :item="(item as TMangrove64NodeItem<T>)" :columns="propsComponent.columns"
+              :selectionMode="propsComponent.selectionMode" :draggable="propsComponent.draggable"
               :indentationPx="propsComponent.indentationPx" :row-css-class="propsComponent.rowCssClass"
               :cell-css-class="propsComponent.cellCssClass" :border-strategy="propsComponent.borderStrategy"
-              :slot-map="slotMap" :theme="themeMode" :checkbox-color="propsComponent.checkboxColor"
-              @node-expand-toggle="onNodeExpandToggle" @node-checkbox-toggle="onNodeCheckboxToggle"
-              @node-click="onNodeClick" />
-            <TreeTableFakeRow :item="item" :columns="columns" :indentationPx="propsComponent.indentationPx"
-              :row-css-class="propsComponent.rowCssClass" :cell-css-class="propsComponent.cellCssClass"
-              :border-strategy="propsComponent.borderStrategy" :is-dragging="isDragging" :theme="themeMode"
-              @node-click="onNodeClick" />
+              :slot-map="slotMap" :checkbox-color="propsComponent.checkboxColor" @onDragStart="onDragStart"
+              @onDragEnd="onDragEnd" @onDragEnter="onDragEnter" :theme="themeMode" @node-click="onNodeClick" />
           </template>
         </tbody>
       </table>

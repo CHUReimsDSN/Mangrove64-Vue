@@ -1,83 +1,84 @@
-import type { TTreeTableBorderStrategy, TTreeTableHierarchy, TTreeTableNodeKeyValue, TTreeTableNodeKeyType, TTreeTableSelectionMode } from "./private-models";
+import type { TMangrove64BorderStrategy, TMangrove64NodeKeyType, TMangrove64SelectionMode } from "./private-models";
 /**
  * @exportToDoc
  */
-export type TMangrove64TreeProps = {
-    nodes: TNodeItemData[];
-    columns: TMangrove64TreeColumn[];
+export type TMangrove64TreeProps<T extends TMangreove64NodeItemData> = {
+    nodes: T[];
+    columns: TMangrove64TreeColumn<T>[];
     draggable?: boolean;
-    nodeKey?: keyof TNodeItemData;
-    childrenKey?: keyof TNodeItemData;
-    parentKey?: keyof TNodeItemData;
-    hasChildrenKey?: keyof TNodeItemData;
-    disabledKey?: keyof TNodeItemData;
-    orderKey?: keyof TNodeItemData;
-    selectionMode?: TTreeTableSelectionMode;
+    nodeKey?: keyof TMangreove64NodeItemData;
+    parentKey?: keyof TMangreove64NodeItemData;
+    childrenKey?: keyof TMangreove64NodeItemData;
+    hasChildrenKey?: keyof TMangreove64NodeItemData;
+    disabledKey?: keyof TMangreove64NodeItemData;
+    orderKey?: keyof TMangreove64NodeItemData;
+    selectionMode?: TMangrove64SelectionMode;
     resizableColumns?: boolean;
     indentationPx?: number;
-    borderStrategy?: TTreeTableBorderStrategy;
+    borderStrategy?: TMangrove64BorderStrategy;
     tableCssClass?: string;
     rowCssClass?: string;
     cellCssClass?: string;
-    nodeKeyType?: TTreeTableNodeKeyType;
+    nodeKeyType?: TMangrove64NodeKeyType;
     checkboxColor?: string;
+    onNodeExpand?: (nodeItem: TMangrove64NodeItem<T>) => Promise<void> | void;
+    onNodeCollapse?: (nodeItem: TMangrove64NodeItem<T>) => Promise<void> | void;
+    onNodeSelect?: (nodeItem: TMangrove64NodeItem<T>) => Promise<void> | void;
+    onNodeUnselect?: (nodeItem: TMangrove64NodeItem<T>) => Promise<void> | void;
+    onLazyLoadChildren?: (nodeItem: TMangrove64NodeItem<T>, nodeKeyValue: TMangrove64NodeKeyValue, done: (nodeData: T[]) => void) => Promise<void> | void;
+    onNodesMove?: (nodeItems: TMangrove64NodeItem<T>[]) => Promise<void> | void;
 };
 /**
  * @exportToDoc
  */
-export type TMangrove64TreeColumn = {
+export type TMangrove64TreeColumn<T extends TMangreove64NodeItemData> = {
     name: string;
     label: string;
-    fieldTarget?: keyof TNodeItemData;
+    fieldTarget?: keyof T;
     cssClass?: string;
     align?: "left" | "center" | "right";
-    format?: (node: TNodeItemData) => string;
+    format?: (nodeData: T) => string;
 };
 /**
  * @exportToDoc
  */
-export type TMangrove64TreeApi = {
-    getSelectedKeys: () => TNodeItem[];
-    getExpandedNodeItem: () => TNodeItem[];
-    getNodeItemByKey: (nodeKey: TTreeTableNodeKeyValue) => TNodeItem | undefined;
-    updateNode: (nodeData: TNodeItemData) => void;
-    addNode: (nodeData: TNodeItemData) => void;
-    removeNode: (nodeKey: TTreeTableNodeKeyValue) => void;
+export type TMangrove64TreeApi<T extends TMangreove64NodeItemData> = {
+    getSelectedNodeItems: () => TMangrove64NodeItem<T>[];
+    getExpandedNodeItems: () => TMangrove64NodeItem<T>[];
+    getNodeItemByKeyValue: (nodeKeyValue: TMangrove64NodeKeyValue) => TMangrove64NodeItem<T> | undefined;
+    updateNodes: (nodesData: T[]) => void;
+    addNodes: (nodesData: T[]) => void;
+    setNodes: (nodesData: T[]) => void;
+    removeNodes: (nodeKeyValues: TMangrove64NodeKeyValue[]) => void;
+    highlightNodes: (nodeKeyValues: TMangrove64NodeKeyValue[]) => void;
+    expandNodes: (nodeKeyValues: TMangrove64NodeKeyValue[]) => void;
 };
 /**
  * @exportToDoc
  */
-export type TMangrove64Emits = {
-    (e: "node-expand", nodeItem: TNodeItem): Promise<void> | void;
-    (e: "node-collapse", nodeItem: TNodeItem): Promise<void> | void;
-    (e: "node-select", nodeItem: TNodeItem): Promise<void> | void;
-    (e: "node-unselect", nodeItem: TNodeItem): Promise<void> | void;
-    (e: "lazy-load-children", params: {
-        nodeItem: TNodeItem;
-        nodeKey: TTreeTableNodeKeyValue;
-        done: (nodeData: TNodeItemData[]) => Promise<void> | void;
-    }): Promise<void> | void;
-    (e: "nodes-move", nodeItems: TNodeItem[], parentKey: TTreeTableNodeKeyValue | null, positionStartWithinParent: number): Promise<void> | void;
-};
+export type TMangreove64NodeItemData = Record<string, unknown>;
 /**
  * @exportToDoc
  */
-export type TNodeItemData = Record<string, unknown>;
-/**
- * @exportToDoc
- */
-export type TNodeItem = {
-    dataIdentifierValue: TTreeTableNodeKeyValue;
-    dataIdentifierKey: keyof TNodeItemData;
-    dataHasChildrenKey: keyof TNodeItemData | undefined;
-    dataOrderKey: keyof TNodeItemData | undefined;
-    parentKey: keyof TNodeItemData | undefined;
-    hierarchy: TTreeTableHierarchy;
+export type TMangrove64NodeItem<T extends TMangreove64NodeItemData> = {
+    dataIdentifierValue: TMangrove64NodeKeyValue;
+    dataIdentifierKey: keyof TMangreove64NodeItemData;
+    dataHasChildrenKey: keyof TMangreove64NodeItemData | undefined;
+    dataOrderKey: keyof TMangreove64NodeItemData | undefined;
+    parentKey: keyof TMangreove64NodeItemData | undefined;
+    childrenKey: keyof TMangreove64NodeItemData | undefined;
     index: number;
     expanded: boolean;
+    disabled: boolean;
     selected: boolean;
     level: number;
     hidden: boolean;
     loading: boolean;
-    data: TNodeItemData;
+    isLeaf: boolean;
+    highlighted: boolean;
+    data: T;
 };
+/**
+ * @exportToDoc
+ */
+export type TMangrove64NodeKeyValue = string | number | symbol;

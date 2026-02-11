@@ -1,29 +1,29 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends TMangreove64NodeItemData">
 import { computed, ref, watch } from "vue";
 import { QIcon, QCheckbox, QSpinner } from 'quasar'
-import type { TMangrove64TreeColumn, TNodeItem } from "../models";
+import type { TMangrove64TreeColumn, TMangrove64NodeItem, TMangreove64NodeItemData } from "../models";
 import type {
-  TTreeTableBorderStrategy,
-  TTreeTableSelectionMode,
-  TTreeTableSlot,
+  TMangrove64BorderStrategy,
+  TMangrove64SelectionMode,
+  TMangrove64Slot,
 } from "../private-models";
-import { NodeItemApi } from "../node-item";
+
 // emits
 const emitsComponent = defineEmits<{
-  (e: "node-expand-toggle", nodeItem: TNodeItem, state: boolean): void;
-  (e: "node-checkbox-toggle", nodeItem: TNodeItem, state: boolean): void;
+  (e: "node-expand-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
+  (e: "node-checkbox-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
 }>();
 
 // props
 const propsComponent = withDefaults(
   defineProps<{
-    item: TNodeItem;
-    column: TMangrove64TreeColumn;
+    item: TMangrove64NodeItem<T>;
+    column: TMangrove64TreeColumn<T>;
     indentationPx: number;
-    selectionMode: TTreeTableSelectionMode;
+    selectionMode: TMangrove64SelectionMode;
     cellCssClass?: string | undefined;
-    borderStrategy: TTreeTableBorderStrategy;
-    slotRender?: TTreeTableSlot | undefined;
+    borderStrategy: TMangrove64BorderStrategy;
+    slotRender?: TMangrove64Slot<T> | undefined;
     checkboxColor: string;
   }>(),
   {}
@@ -54,11 +54,12 @@ const checkboxSelectionMode = computed(() => {
 });
 const nodeFieldByColumn = computed(() => {
   if (propsComponent.column.format) {
-    return propsComponent.column.format(propsComponent.item);
+    return propsComponent.column.format(propsComponent.item.data);
   }
   if (propsComponent.column.fieldTarget) {
     return propsComponent.item.data[propsComponent.column.fieldTarget];
   }
+  return ''
 });
 const getcellCssClass = computed(() => {
   let classes = "mangrove64-cell";
@@ -106,10 +107,11 @@ watch(
         v-model="selected"
         size="xs"
         dense
+        :disable="propsComponent.item.disabled"
         :color="propsComponent.checkboxColor"
       />
       <template v-if="!propsComponent.item.loading">
-        <template v-if="!NodeItemApi.isLeaf(propsComponent.item)">
+        <template v-if="!propsComponent.item.isLeaf">
           <q-icon
             v-if="!propsComponent.item.expanded"
             @click="toggleExpanded"

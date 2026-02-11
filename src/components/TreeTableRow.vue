@@ -1,49 +1,57 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends TMangreove64NodeItemData">
 import type {
   TMangrove64TreeColumn,
-  TNodeItem,
+  TMangrove64NodeItem,
+  TMangreove64NodeItemData,
 } from "../models";
 import type {
-  TTreeTableBorderStrategy,
-  TTreeTableSelectionMode,
-  TTreeTableSlot,
-  TTreeTableTheme,
+  TMangrove64BorderStrategy,
+  TMangrove64DragMode,
+  TMangrove64SelectionMode,
+  TMangrove64Slot,
+  TMangrove64Theme,
 } from "../private-models";
 import { computed } from "vue";
 import TreeTableBodyCell from "./TreeTableBodyCell.vue";
 import TreeTableBodyFirstRowCell from "./TreeTableBodyFirstRowCell.vue";
-import { NodeItemApi } from "../node-item";
 
 // emits
 const emitsComponent = defineEmits<{
-  (e: "node-expand-toggle", nodeItem: TNodeItem, state: boolean): void;
-  (e: "node-checkbox-toggle", nodeItem: TNodeItem, state: boolean): void;
-  (e: "node-click", nodeItem: TNodeItem): void;
+  (e: "node-expand-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
+  (e: "node-checkbox-toggle", nodeItem: TMangrove64NodeItem<T>, state: boolean): void;
+  (e: "node-click", nodeItem: TMangrove64NodeItem<T>): void;
+  (e: "on-drag-start", event: DragEvent): void;
+  (e: "on-drag-enter", event: DragEvent, nodeItem: TMangrove64NodeItem<T>, mode: TMangrove64DragMode): void;
+  (e: "on-drag-end", event: DragEvent): void;
 }>();
 
 // props
 const propsComponent = defineProps<{
-  item: TNodeItem;
-  columns: TMangrove64TreeColumn[];
-  selectionMode: TTreeTableSelectionMode;
+  item: TMangrove64NodeItem<T>;
+  columns: TMangrove64TreeColumn<T>[];
+  selectionMode: TMangrove64SelectionMode;
+  draggable: boolean;
   indentationPx: number;
-  borderStrategy: TTreeTableBorderStrategy;
+  borderStrategy: TMangrove64BorderStrategy;
   rowCssClass: string | undefined;
   cellCssClass: string | undefined;
-  slotMap: Map<string, TTreeTableSlot>;
+  slotMap: Map<string, TMangrove64Slot<T>>;
   checkboxColor: string;
-  theme: TTreeTableTheme;
+  theme: TMangrove64Theme;
 }>();
 
 // functions
-function nodeToggleExpand(nodeItem: TNodeItem, state: boolean) {
+function nodeToggleExpand(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
   emitsComponent("node-expand-toggle", nodeItem, state);
 }
-function onToggleCheckbox(nodeItem: TNodeItem, state: boolean) {
+function onToggleCheckbox(nodeItem: TMangrove64NodeItem<T>, state: boolean) {
   emitsComponent("node-checkbox-toggle", nodeItem, state);
 }
-function onNodeClick(nodeItem: TNodeItem) {
+function onNodeClick(nodeItem: TMangrove64NodeItem<T>) {
   emitsComponent("node-click", nodeItem);
+}
+function onDragOver(event: DragEvent) {
+  event.preventDefault()
 }
 
 // computeds
@@ -59,12 +67,22 @@ const rowClass = computed(() => {
   if (propsComponent.item.hidden) {
     classes += " mangrove64-row-hidden";
   }
+  if (propsComponent.item.highlighted) {
+    classes += " mangrove64-row-highlight"
+    if (propsComponent.theme === 'dark') {
+      classes += " mangrove64-row-highlight-dark"
+    }
+  }
   return classes;
 });
 </script>
 
 <template>
-  <tr @click="onNodeClick(propsComponent.item)" :class="rowClass" :data-key="NodeItemApi.getDataKeyValue(propsComponent.item)">
+  <tr @click="onNodeClick(propsComponent.item)" :class="rowClass"
+    :draggable="propsComponent.draggable && propsComponent.item.selected && !propsComponent.item.disabled"
+    @dragstart="emitsComponent('on-drag-start', $event)"
+    @dragenter="emitsComponent('on-drag-enter', $event, propsComponent.item, 'child')" @dragover="onDragOver($event)"
+    @dragend="emitsComponent('on-drag-end', $event)" :data-key="propsComponent.item.dataIdentifierValue">
     <template v-for="(col, colIndex) in propsComponent.columns" :key="col.name">
       <TreeTableBodyFirstRowCell v-if="colIndex === 0" :column="col" :item="propsComponent.item"
         :indentationPx="propsComponent.indentationPx" :selectionMode="propsComponent.selectionMode"

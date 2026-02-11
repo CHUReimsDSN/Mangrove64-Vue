@@ -1,44 +1,54 @@
-import type { TNodeItem } from "./models";
-import { TTreeTableNodeKeyValue } from "./private-models";
+import type { TMangrove64NodeItem, TMangreove64NodeItemData, TMangrove64NodeKeyValue } from './models';
 
-const fakeElementPrefix = "__mangrove64-fake-row-";
+const fakeElementPrefix = '__mangrove64-fake-row-';
 
-function isLeaf(nodeItem: TNodeItem) {
-  if (!nodeItem.dataHasChildrenKey) {
-    return false;
-  }
-  return Boolean(nodeItem.data[nodeItem.dataHasChildrenKey]) === false;
+function getFakeDataKeyValue<T extends TMangreove64NodeItemData>(nodeItem: TMangrove64NodeItem<T>) {
+  return `${fakeElementPrefix}${String(nodeItem.dataIdentifierValue)}`;
 }
-function setLeaf(nodeItem: TNodeItem, state: boolean) {
-  if (!nodeItem.dataHasChildrenKey) {
+function getDataChildren<T extends TMangreove64NodeItemData>(nodeItem: TMangrove64NodeItem<T>) {
+  if (!nodeItem.childrenKey) {
+    return [];
+  }
+  return (nodeItem.data[nodeItem.childrenKey] ?? []) as T[];
+}
+function setDataChildren<T extends TMangreove64NodeItemData>(nodeItem: TMangrove64NodeItem<T>, dataChildren: T[]) {
+  if (!nodeItem.childrenKey) {
     return;
   }
-  nodeItem.data[nodeItem.dataHasChildrenKey] = state;
+  (nodeItem.data[nodeItem.childrenKey] as T[]) = dataChildren;
 }
-function getDataKeyValue(nodeItem: TNodeItem) {
-  return (nodeItem.data[nodeItem.dataIdentifierKey] as TTreeTableNodeKeyValue).toString()
-}
-function getFakeDataKeyValue(nodeItem: TNodeItem) {
-  return `${fakeElementPrefix}${getDataKeyValue(nodeItem).toString()}`;
-}
-function getNodeOrder(nodeItem: TNodeItem) {
-  if (!nodeItem.dataOrderKey) {
-    return 0
-  }
-  return (nodeItem.data[nodeItem.dataOrderKey] as number) ?? 0;
-}
-function getDataParentKeyValue(nodeItem: TNodeItem) {
+function getParentKeyValue<T extends TMangreove64NodeItemData>(nodeItem: TMangrove64NodeItem<T>) {
   if (!nodeItem.parentKey) {
-    return '???'
+    return null
   }
-  return (nodeItem.data[nodeItem.parentKey] as TTreeTableNodeKeyValue).toString()
+  return nodeItem.data[nodeItem.parentKey] as TMangrove64NodeKeyValue;
+}
+function setParentKeyValue<T extends TMangreove64NodeItemData>(nodeItem: TMangrove64NodeItem<T>, parentKeyValue: TMangrove64NodeKeyValue | null) {
+  if (!nodeItem.parentKey) {
+    return
+  }
+  (nodeItem.data[nodeItem.parentKey] as (TMangrove64NodeKeyValue | null)) = parentKeyValue
+}
+function getDataOrder<T extends TMangreove64NodeItemData>(nodeItem: TMangrove64NodeItem<T>) {
+  if (!nodeItem.dataOrderKey) {
+    return -1;
+  }
+  return nodeItem.data[nodeItem.dataOrderKey] as number ?? 0;
+}
+function setDataOrder<T extends TMangreove64NodeItemData>(nodeItem: TMangrove64NodeItem<T>, newOrder: number) {
+  if (!nodeItem.dataOrderKey) {
+    return
+  }
+  (nodeItem.data[nodeItem.dataOrderKey] as number) = newOrder
 }
 
 export const NodeItemApi = {
-  isLeaf,
-  setLeaf,
-  getDataKeyValue,
   getFakeDataKeyValue,
-  getNodeOrder,
-  getDataParentKeyValue
+  getDataChildren,
+  setDataChildren,
+  getParentKeyValue,
+  setParentKeyValue,
+  getDataOrder,
+  setDataOrder,
+  fakeElementPrefix
 };
